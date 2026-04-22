@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastFinance - Personal Finance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .gradient-dark { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-chart-line text-purple-600 text-2xl"></i>
+                <h1 class="text-2xl font-bold text-gray-900">FastFinance</h1>
+            </div>
+            <div class="hidden md:flex gap-6">
+                <a href="#features" class="text-gray-600 hover:text-gray-900">Features</a>
+                <a href="#demo" class="text-gray-600 hover:text-gray-900">Demo</a>
+                <a href="#setup" class="text-gray-600 hover:text-gray-900">Setup</a>
+                <a href="https://github.com/matzul/patrimonio" class="text-purple-600 hover:text-purple-800 font-medium">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-dark text-white py-20 px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-5xl font-bold mb-4">Track Your Finances Easily</h2>
+            <p class="text-xl text-purple-100 mb-8">A lightweight, self-hosted personal finance manager built with FastAPI, Telegram integration, and mobile support.</p>
+            <div class="flex gap-4 justify-center flex-wrap">
+                <a href="https://github.com/matzul/patrimonio" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-purple-50">View Source</a>
+                <a href="#setup" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h3 class="text-3xl font-bold text-center mb-12">Key Features</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature Cards -->
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-purple-500">
+                    <i class="fas fa-university text-purple-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Multi-Account</h4>
+                    <p class="text-gray-600">Manage multiple bank accounts, track balances across currencies and institutions.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-blue-500">
+                    <i class="fas fa-exchange-alt text-blue-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Transactions</h4>
+                    <p class="text-gray-600">Log income and expenses with categories, notes, and bulk import from bank statements.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-green-500">
+                    <i class="fas fa-sync-alt text-green-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Subscriptions</h4>
+                    <p class="text-gray-600">Monitor recurring payments and calculate monthly/annual costs automatically.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-red-500">
+                    <i class="fas fa-gem text-red-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Net Worth</h4>
+                    <p class="text-gray-600">Track assets, liabilities, and see your total net worth evolve over time.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-yellow-500">
+                    <i class="fas fa-lightbulb text-yellow-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Insights</h4>
+                    <p class="text-gray-600">Financial analysis, spending patterns, and personalized recommendations.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-indigo-500">
+                    <i class="fas fa-robot text-indigo-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Telegram Bot</h4>
+                    <p class="text-gray-600">Chat interface with OCR support to send receipts and log transactions on-the-go.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-orange-500">
+                    <i class="fas fa-mobile-alt text-orange-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Mobile App</h4>
+                    <p class="text-gray-600">Native Kivy/KivyMD app for Android and desktop—full feature parity.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-teal-500">
+                    <i class="fas fa-code text-teal-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">REST API</h4>
+                    <p class="text-gray-600">Complete REST API with OpenAPI documentation and SDK support.</p>
+                </div>
+                <div class="card-hover bg-white p-8 rounded-xl shadow-md border-l-4 border-pink-500">
+                    <i class="fas fa-lock text-pink-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-2">Self-Hosted</h4>
+                    <p class="text-gray-600">Deploy on your own server or local machine. Full data privacy and control.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-16 px-4 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h3 class="text-3xl font-bold text-center mb-12">Dashboard Preview</h3>
+            <div class="bg-gray-100 rounded-lg overflow-hidden shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6">
+                    <!-- Sample Cards -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm border-l-4 border-purple-500">
+                        <div class="text-gray-500 text-sm font-medium">Net Worth</div>
+                        <div class="text-3xl font-bold text-green-600 mt-2">€42,580</div>
+                        <div class="text-gray-400 text-xs mt-2">↑ 3.2% this month</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-6 shadow-sm border-l-4 border-blue-500">
+                        <div class="text-gray-500 text-sm font-medium">Banks Total</div>
+                        <div class="text-3xl font-bold text-blue-600 mt-2">€18,920</div>
+                        <div class="text-gray-400 text-xs mt-2">Across 3 accounts</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-6 shadow-sm border-l-4 border-green-500">
+                        <div class="text-gray-500 text-sm font-medium">This Month</div>
+                        <div class="text-3xl font-bold text-green-600 mt-2">€1,240</div>
+                        <div class="text-gray-400 text-xs mt-2">Net balance</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-6 shadow-sm border-l-4 border-red-500">
+                        <div class="text-gray-500 text-sm font-medium">Subscriptions</div>
+                        <div class="text-3xl font-bold text-red-600 mt-2">€156/mo</div>
+                        <div class="text-gray-400 text-xs mt-2">12 active</div>
+                    </div>
+                </div>
+
+                <!-- Sample Chart -->
+                <div class="p-6 bg-white border-t">
+                    <h4 class="font-semibold text-gray-800 mb-4">Monthly Evolution</h4>
+                    <canvas id="previewChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h3 class="text-3xl font-bold text-center mb-12">Architecture</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-globe text-purple-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">Web UI</h4>
+                    <p class="text-gray-600 mb-4">FastAPI + Jinja2 templates. Responsive dashboard with charts, transaction viewing, and account management.</p>
+                    <p class="text-sm text-gray-500">Run: <code class="bg-gray-100 px-2 py-1 rounded">uv run fastfinance-web</code></p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-robot text-indigo-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">Telegram Bot</h4>
+                    <p class="text-gray-600 mb-4">Chat interface with PaddleOCR / OpenAI Vision integration. Send receipt photos and log transactions instantly.</p>
+                    <p class="text-sm text-gray-500">Run: <code class="bg-gray-100 px-2 py-1 rounded">uv run fastfinance-bot</code></p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-mobile-alt text-orange-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">Mobile App</h4>
+                    <p class="text-gray-600 mb-4">Kivy + KivyMD native client for Android and desktop. Full feature parity with web UI.</p>
+                    <p class="text-sm text-gray-500">Run: <code class="bg-gray-100 px-2 py-1 rounded">uv run fastfinance-mobile</code></p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-database text-green-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">Database</h4>
+                    <p class="text-gray-600 mb-4">SQLAlchemy with SQLite by default. Models for banks, transactions, subscriptions, budgets, and more.</p>
+                    <p class="text-sm text-gray-500">Location: <code class="bg-gray-100 px-2 py-1 rounded">patrimonio.db</code></p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-terminal text-teal-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">CLI</h4>
+                    <p class="text-gray-600 mb-4">Typer + Rich CLI for managing banks, transactions, subscriptions from the terminal.</p>
+                    <p class="text-sm text-gray-500">Run: <code class="bg-gray-100 px-2 py-1 rounded">uv run fastfinance --help</code></p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <i class="fas fa-code text-blue-600 text-3xl mb-4"></i>
+                    <h4 class="text-xl font-semibold mb-4">REST API</h4>
+                    <p class="text-gray-600 mb-4">Full REST API at <code class="bg-gray-100 px-2 py-1 rounded">/api/</code>. Interactive docs at <code class="bg-gray-100 px-2 py-1 rounded">/docs</code>.</p>
+                    <p class="text-sm text-gray-500">Use: FastAPI/OpenAPI clients or webhooks</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Setup Section -->
+    <section id="setup" class="py-16 px-4 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+            <h3 class="text-3xl font-bold text-center mb-12">Quick Setup</h3>
+
+            <div class="space-y-8">
+                <!-- Step 1 -->
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">1</div>
+                        <h4 class="text-xl font-semibold">Clone & Install</h4>
+                    </div>
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-x-auto"><code>git clone https://github.com/YOU/patrimonio.git
+cd patrimonio
+uv sync</code></pre>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">2</div>
+                        <h4 class="text-xl font-semibold">Run Web App</h4>
+                    </div>
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-x-auto"><code>uv run fastfinance-web
+# Open: http://127.0.0.1:8000</code></pre>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">3</div>
+                        <h4 class="text-xl font-semibold">(Optional) Telegram Bot</h4>
+                    </div>
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-x-auto"><code>export TELEGRAM_BOT_TOKEN="your-token-here"
+uv run fastfinance-bot</code></pre>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">4</div>
+                        <h4 class="text-xl font-semibold">(Optional) Mobile App</h4>
+                    </div>
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded text-sm overflow-x-auto"><code>uv pip install -e ".[mobile]"
+uv run fastfinance-mobile</code></pre>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg mt-8">
+                <p class="text-blue-900"><strong>Node:</strong> FastFinance requires Python 3.12+. Use <code class="bg-white px-2 py-1 rounded text-sm">uv</code> for dependency management (it handles virtual environments automatically).</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h3 class="text-3xl font-bold text-center mb-12">Tech Stack</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-blue-500 text-center">
+                    <div class="text-2xl font-bold text-blue-600">Python</div>
+                    <p class="text-gray-600 text-sm mt-2">3.12+</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-green-500 text-center">
+                    <div class="text-2xl font-bold text-green-600">FastAPI</div>
+                    <p class="text-gray-600 text-sm mt-2">Web framework</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-orange-500 text-center">
+                    <div class="text-2xl font-bold text-orange-600">SQLAlchemy</div>
+                    <p class="text-gray-600 text-sm mt-2">ORM</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-purple-500 text-center">
+                    <div class="text-2xl font-bold text-purple-600">Typer</div>
+                    <p class="text-gray-600 text-sm mt-2">CLI</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-red-500 text-center">
+                    <div class="text-2xl font-bold text-red-600">Telegram Bot</div>
+                    <p class="text-gray-600 text-sm mt-2">Chat interface</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-indigo-500 text-center">
+                    <div class="text-2xl font-bold text-indigo-600">PaddleOCR</div>
+                    <p class="text-gray-600 text-sm mt-2">OCR pipeline</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-pink-500 text-center">
+                    <div class="text-2xl font-bold text-pink-600">Kivy</div>
+                    <p class="text-gray-600 text-sm mt-2">Mobile UI</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border-t-4 border-teal-500 text-center">
+                    <div class="text-2xl font-bold text-teal-600">uv</div>
+                    <p class="text-gray-600 text-sm mt-2">Package manager</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 px-4">
+        <div class="max-w-6xl mx-auto grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+                <h5 class="font-semibold mb-4">FastFinance</h5>
+                <p class="text-gray-400">Personal finance tracker with multi-platform support.</p>
+            </div>
+            <div>
+                <h5 class="font-semibold mb-4">Links</h5>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#features" class="hover:text-white">Features</a></li>
+                    <li><a href="#setup" class="hover:text-white">Setup</a></li>
+                    <li><a href="https://github.com/matzul/patrimonio" class="hover:text-white">GitHub</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5 class="font-semibold mb-4">Resources</h5>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="https://fastapi.tiangolo.com/" class="hover:text-white">FastAPI Docs</a></li>
+                    <li><a href="https://kivy.org/" class="hover:text-white">Kivy Docs</a></li>
+                    <li><a href="https://python-telegram-bot.readthedocs.io/" class="hover:text-white">Telegram Bot API</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5 class="font-semibold mb-4">Contact</h5>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="https://github.com/matzul" class="hover:text-white">GitHub Profile</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+            <p>&copy; 2026 FastFinance. Open source personal finance tracker.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Chart preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const chartCanvas = document.getElementById('previewChart');
+            if (chartCanvas) {
+                const ctx = chartCanvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Net Worth',
+                            data: [38500, 39200, 40100, 40800, 41500, 42580],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#667eea',
+                            pointRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: false, ticks: { callback: v => '€' + v/1000 + 'k' } }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
