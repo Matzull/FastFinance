@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Patrimonio{% endblock %}
+
+{% block content %}
+<div x-data="dashboardData()" x-init="init()">
+    <!-- Título -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+            <i class="fas fa-chart-line mr-2 text-purple-600"></i>
+            <span x-text="t('financialDashboard')">Financial Dashboard</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2" x-text="t('generalSummary')">General overview of your finances</p>
+    </div>
+
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Patrimonio Neto -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium" x-text="t('netWorth')">Net Worth</p>
+                    <p class="text-2xl font-bold" :class="resumen.patrimonio_neto >= 0 ? 'text-green-600' : 'text-red-600'" x-text="formatMoney(resumen.patrimonio_neto)"></p>
+                </div>
+                <div class="bg-purple-100 dark:bg-purple-900 rounded-full p-3">
+                    <i class="fas fa-gem text-purple-600 dark:text-purple-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total en Bancos -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium" x-text="t('totalInBanks')">Total in Banks</p>
+                    <p class="text-2xl font-bold text-blue-600" x-text="formatMoney(resumen.total_bancos)"></p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900 rounded-full p-3">
+                    <i class="fas fa-university text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance del Mes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium" x-text="t('monthlyBalance')">Balance del Mes</p>
+                    <p class="text-2xl font-bold" :class="resumen.resumen_mes_actual?.balance >= 0 ? 'text-green-600' : 'text-red-600'" x-text="formatMoney(resumen.resumen_mes_actual?.balance || 0)"></p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900 rounded-full p-3">
+                    <i class="fas fa-chart-bar text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gasto en Suscripciones -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium" x-text="t('subscriptionsMonth')">Subscriptions/month</p>
+                    <p class="text-2xl font-bold text-red-600" x-text="formatMoney(resumen.gasto_mensual_suscripciones)"></p>
+                </div>
+                <div class="bg-red-100 dark:bg-red-900 rounded-full p-3">
+                    <i class="fas fa-sync-alt text-red-600 dark:text-red-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Evolución Mensual -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <i class="fas fa-chart-line mr-2 text-purple-600"></i>
+                <span x-text="t('monthlyEvolution')">Monthly Evolution</span>
+            </h3>
+            <canvas id="evolucionChart" height="250"></canvas>
+        </div>
+
+        <!-- Gastos por Categoría -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <i class="fas fa-chart-pie mr-2 text-purple-600"></i>
+                <span x-text="t('expensesByCategory')">Expenses by Category</span>
+            </h3>
+            <canvas id="categoriasChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Segunda fila de gráficas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Saldo por Banco -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <i class="fas fa-university mr-2 text-blue-600"></i>
+                <span x-text="t('balanceByBank')">Balance by Bank</span>
+            </h3>
+            <canvas id="bancosChart" height="250"></canvas>
+        </div>
+
+        <!-- Ingresos vs Gastos del Mes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <i class="fas fa-balance-scale mr-2 text-green-600"></i>
+                <span x-text="t('income') + ' vs ' + t('expenses')">Income vs Expenses</span>
+            </h3>
+            <div class="flex items-center justify-center h-64">
+                <div class="text-center">
+                    <div class="flex justify-around mb-4">
+                        <div class="text-center px-8">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm" x-text="t('income')">Income</p>
+                            <p class="text-3xl font-bold text-green-600" x-text="formatMoney(resumen.resumen_mes_actual?.ingresos || 0)"></p>
+                        </div>
+                        <div class="text-4xl text-gray-300 dark:text-gray-600 flex items-center">vs</div>
+                        <div class="text-center px-8">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm" x-text="t('expenses')">Expenses</p>
+                            <p class="text-3xl font-bold text-red-600" x-text="formatMoney(resumen.resumen_mes_actual?.gastos || 0)"></p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 mt-6">
+                        <div class="h-4 rounded-full transition-all duration-500"
+                             :class="getBalanceRatio() > 50 ? 'bg-green-500' : 'bg-red-500'"
+                             :style="'width: ' + getBalanceRatio() + '%'"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        <span x-text="t('balance')">Balance</span>: <span class="font-bold" x-text="getSavingRate() + '%'"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimas transacciones -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+                <i class="fas fa-list mr-2 text-purple-600"></i>
+                <span x-text="t('recentTransactions')">Recent Transactions</span>
+            </h3>
+            <a href="/transacciones" class="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 text-sm">
+                <span x-text="t('transactions')">Ver todas</span> <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" x-text="t('date')">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" x-text="t('description')">Description</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" x-text="t('category')">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" x-text="t('bank')">Bank</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" x-text="t('amount')">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="trans in transacciones" :key="trans.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" x-text="trans.fecha"></td>
+                            <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200" x-text="trans.descripcion"></td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-200" x-text="trans.categoria"></span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" x-text="trans.banco_nombre"></td>
+                            <td class="px-4 py-3 text-sm font-medium text-right"
+                                :class="trans.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'">
+                                <span x-text="(trans.tipo === 'ingreso' ? '+' : '-') + formatMoney(trans.cantidad)"></span>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="transacciones.length === 0">
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400" x-text="t('noTransactions')">
+                            No transactions registered
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboardData() {
+    return {
+        resumen: {},
+        transacciones: [],
+        evolucion: [],
+        categorias: [],
+        bancos: [],
+        evolucionChart: null,
+        categoriasChart: null,
+        bancosChart: null,
+
+        t(key) {
+            return getTranslation(key);
+        },
+
+        async init() {
+            await Promise.all([
+                this.fetchResumen(),
+                this.fetchTransacciones(),
+                this.fetchEvolucion(),
+                this.fetchCategorias(),
+                this.fetchBancos()
+            ]);
+            this.renderCharts();
+        },
+
+        async fetchResumen() {
+            const res = await fetch('/api/resumen');
+            this.resumen = await res.json();
+        },
+
+        async fetchTransacciones() {
+            const res = await fetch('/api/transacciones?limite=10');
+            this.transacciones = await res.json();
+        },
+
+        async fetchEvolucion() {
+            const res = await fetch('/api/estadisticas/evolucion-mensual?meses=6');
+            this.evolucion = await res.json();
+        },
+
+        async fetchCategorias() {
+            const res = await fetch('/api/estadisticas/gastos-por-categoria');
+            this.categorias = await res.json();
+        },
+
+        async fetchBancos() {
+            const res = await fetch('/api/estadisticas/saldo-bancos');
+            this.bancos = await res.json();
+        },
+
+        renderCharts() {
+            this.renderEvolucionChart();
+            this.renderCategoriasChart();
+            this.renderBancosChart();
+        },
+
+        renderEvolucionChart() {
+            const ctx = document.getElementById('evolucionChart').getContext('2d');
+            this.evolucionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: this.evolucion.map(e => e.mes),
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: this.evolucion.map(e => parseFloat(e.ingresos)),
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Expenses',
+                            data: this.evolucion.map(e => parseFloat(e.gastos)),
+                            borderColor: '#EF4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        },
+
+        renderCategoriasChart() {
+            const ctx = document.getElementById('categoriasChart').getContext('2d');
+            const colors = [
+                '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6',
+                '#EF4444', '#6366F1', '#14B8A6', '#F97316', '#84CC16'
+            ];
+            this.categoriasChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: this.categorias.map(c => c.categoria),
+                    datasets: [{
+                        data: this.categorias.map(c => parseFloat(c.total)),
+                        backgroundColor: colors.slice(0, this.categorias.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        },
+
+        renderBancosChart() {
+            const ctx = document.getElementById('bancosChart').getContext('2d');
+            this.bancosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: this.bancos.map(b => b.nombre),
+                    datasets: [{
+                        label: 'Balance',
+                        data: this.bancos.map(b => b.saldo),
+                        backgroundColor: this.bancos.map(b => b.saldo >= 0 ? '#10B981' : '#EF4444'),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        },
+
+        formatMoney(amount) {
+            if (amount === undefined || amount === null) return '€0.00';
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        },
+
+        getBalanceRatio() {
+            const ingresos = parseFloat(this.resumen.resumen_mes_actual?.ingresos || 0);
+            const gastos = parseFloat(this.resumen.resumen_mes_actual?.gastos || 0);
+            if (ingresos === 0 && gastos === 0) return 50;
+            return Math.min(100, Math.max(0, (ingresos / (ingresos + gastos)) * 100));
+        },
+
+        getSavingRate() {
+            const ingresos = parseFloat(this.resumen.resumen_mes_actual?.ingresos || 0);
+            const gastos = parseFloat(this.resumen.resumen_mes_actual?.gastos || 0);
+            if (ingresos === 0) return 0;
+            return Math.round(((ingresos - gastos) / ingresos) * 100);
+        }
+    };
+}
+</script>
+{% endblock %}

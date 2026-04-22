@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Net Worth - Assets & Liabilities{% endblock %}
+
+{% block content %}
+<div x-data="patrimonioData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-gem mr-2 text-purple-600"></i>
+                Net Worth
+            </h1>
+            <p class="text-gray-600 mt-2">Manage your assets and liabilities</p>
+        </div>
+        <div class="flex space-x-3">
+            <button @click="openModal('activo')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg shadow-lg transition flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Asset
+            </button>
+            <button @click="openModal('pasivo')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg shadow-lg transition flex items-center">
+                <i class="fas fa-minus mr-2"></i>
+                Liability
+            </button>
+        </div>
+    </div>
+
+    <!-- Net worth summary -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6 text-white md:col-span-2">
+            <p class="text-purple-200 text-sm">Total net worth</p>
+            <p class="text-4xl font-bold" x-text="formatMoney(patrimonioNeto)"></p>
+            <p class="text-purple-200 text-xs mt-2">(Assets + Banks - Liabilities)</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+            <p class="text-gray-500 text-sm">Total assets</p>
+            <p class="text-2xl font-bold text-green-600" x-text="formatMoney(totalActivos)"></p>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+            <p class="text-gray-500 text-sm">Total liabilities</p>
+            <p class="text-2xl font-bold text-red-600" x-text="formatMoney(totalPasivos)"></p>
+        </div>
+    </div>
+
+    <!-- Distribution charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-pie mr-2 text-green-600"></i>
+                Asset distribution
+            </h3>
+            <canvas id="activosChart" height="200"></canvas>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-pie mr-2 text-red-600"></i>
+                Liability distribution
+            </h3>
+            <canvas id="pasivosChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Assets and liabilities lists -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Assets -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-green-50 px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-green-800">
+                    <i class="fas fa-arrow-trend-up mr-2"></i>
+                    Assets
+                </h3>
+            </div>
+            <div class="divide-y">
+                <template x-for="item in activos" :key="item.id">
+                    <div class="px-6 py-4 hover:bg-gray-50 flex justify-between items-center">
+                        <div>
+                            <p class="font-medium text-gray-800" x-text="item.nombre"></p>
+                            <p class="text-sm text-gray-500" x-text="item.descripcion || 'No description'"></p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-lg font-bold text-green-600" x-text="formatMoney(item.valor)"></span>
+                            <button @click="eliminarPatrimonio(item.id)" class="text-red-400 hover:text-red-600 p-2">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="activos.length === 0" class="px-6 py-8 text-center text-gray-400">
+                    <i class="fas fa-coins text-4xl mb-2"></i>
+                    <p>No assets registered</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liabilities -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-red-50 px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-red-800">
+                    <i class="fas fa-arrow-trend-down mr-2"></i>
+                    Liabilities
+                </h3>
+            </div>
+            <div class="divide-y">
+                <template x-for="item in pasivos" :key="item.id">
+                    <div class="px-6 py-4 hover:bg-gray-50 flex justify-between items-center">
+                        <div>
+                            <p class="font-medium text-gray-800" x-text="item.nombre"></p>
+                            <p class="text-sm text-gray-500" x-text="item.descripcion || 'No description'"></p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-lg font-bold text-red-600" x-text="formatMoney(item.valor)"></span>
+                            <button @click="eliminarPatrimonio(item.id)" class="text-red-400 hover:text-red-600 p-2">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="pasivos.length === 0" class="px-6 py-8 text-center text-gray-400">
+                    <i class="fas fa-credit-card text-4xl mb-2"></i>
+                    <p>No liabilities registered</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New asset/liability modal -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div @click.away="closeModal()" class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="p-6 border-b" :class="form.tipo === 'activo' ? 'bg-green-50' : 'bg-red-50'">
+                <h3 class="text-xl font-bold" :class="form.tipo === 'activo' ? 'text-green-800' : 'text-red-800'">
+                    <i :class="form.tipo === 'activo' ? 'fas fa-plus-circle' : 'fas fa-minus-circle'" class="mr-2"></i>
+                    <span x-text="form.tipo === 'activo' ? 'New asset' : 'New liability'"></span>
+                </h3>
+            </div>
+            <form @submit.prevent="guardarPatrimonio()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" x-model="form.nombre" required
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                              :placeholder="form.tipo === 'activo' ? 'e.g. House, Car, Investments...' : 'e.g. Mortgage, Loan...'">
+                </div>
+                <div>
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Value (€)</label>
+                    <input type="number" step="0.01" min="0" x-model="form.valor" required
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 text-xl font-bold text-center"
+                           placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                    <textarea x-model="form.descripcion" rows="2"
+                              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                              placeholder="Additional description..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Acquisition date (optional)</label>
+                    <input type="date" x-model="form.fecha_adquisicion"
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            :class="form.tipo === 'activo' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
+                            class="px-6 py-2 text-white rounded-lg">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function patrimonioData() {
+    return {
+        activos: [],
+        pasivos: [],
+        totalBancos: 0,
+        showModal: false,
+        activosChart: null,
+        pasivosChart: null,
+        form: {
+            tipo: 'activo',
+            nombre: '',
+            valor: '',
+            descripcion: '',
+            fecha_adquisicion: ''
+        },
+
+        get totalActivos() {
+            return this.activos.reduce((sum, a) => sum + parseFloat(a.valor), 0);
+        },
+
+        get totalPasivos() {
+            return this.pasivos.reduce((sum, p) => sum + parseFloat(p.valor), 0);
+        },
+
+        get patrimonioNeto() {
+            return this.totalActivos + this.totalBancos - this.totalPasivos;
+        },
+
+        async init() {
+            await this.fetchPatrimonio();
+            await this.fetchResumen();
+            this.renderCharts();
+        },
+
+        async fetchPatrimonio() {
+            const resActivos = await fetch('/api/patrimonio?tipo=activo');
+            this.activos = await resActivos.json();
+            
+            const resPasivos = await fetch('/api/patrimonio?tipo=pasivo');
+            this.pasivos = await resPasivos.json();
+        },
+
+        async fetchResumen() {
+            const res = await fetch('/api/resumen');
+            const data = await res.json();
+            this.totalBancos = parseFloat(data.total_bancos);
+        },
+
+        renderCharts() {
+            this.renderActivosChart();
+            this.renderPasivosChart();
+        },
+
+        renderActivosChart() {
+            const ctx = document.getElementById('activosChart');
+            if (!ctx) return;
+            
+            const colors = ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5'];
+            
+            if (this.activosChart) this.activosChart.destroy();
+            
+            this.activosChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: this.activos.map(a => a.nombre),
+                    datasets: [{
+                        data: this.activos.map(a => parseFloat(a.valor)),
+                        backgroundColor: colors.slice(0, this.activos.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        },
+
+        renderPasivosChart() {
+            const ctx = document.getElementById('pasivosChart');
+            if (!ctx) return;
+            
+            const colors = ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'];
+            
+            if (this.pasivosChart) this.pasivosChart.destroy();
+            
+            this.pasivosChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: this.pasivos.map(p => p.nombre),
+                    datasets: [{
+                        data: this.pasivos.map(p => parseFloat(p.valor)),
+                        backgroundColor: colors.slice(0, this.pasivos.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        },
+
+        openModal(tipo) {
+            this.form.tipo = tipo;
+            this.showModal = true;
+        },
+
+        closeModal() {
+            this.showModal = false;
+            this.form = {
+                tipo: 'activo',
+                nombre: '',
+                valor: '',
+                descripcion: '',
+                fecha_adquisicion: ''
+            };
+        },
+
+        async guardarPatrimonio() {
+            const payload = {
+                tipo: this.form.tipo,
+                nombre: this.form.nombre,
+                valor: parseFloat(this.form.valor),
+                descripcion: this.form.descripcion || null,
+                fecha_adquisicion: this.form.fecha_adquisicion || null
+            };
+            
+            await fetch('/api/patrimonio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            this.closeModal();
+            await this.fetchPatrimonio();
+            this.renderCharts();
+        },
+
+        async eliminarPatrimonio(id) {
+            if (confirm('Delete this item?')) {
+                await fetch(`/api/patrimonio/${id}`, { method: 'DELETE' });
+                await this.fetchPatrimonio();
+                this.renderCharts();
+            }
+        },
+
+        formatMoney(amount) {
+            if (amount === undefined || amount === null) return '€0.00';
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        }
+    };
+}
+</script>
+{% endblock %}

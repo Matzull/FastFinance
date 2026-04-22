@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Patrimonio{% endblock %}
+
+{% block content %}
+<div x-data="transaccionesData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+                <i class="fas fa-exchange-alt mr-2 text-green-600"></i>
+                Transactions
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">Track and manage your income and expenses</p>
+        </div>
+        <div class="flex space-x-3">
+            <button @click="triggerStatementImport()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg shadow-lg transition flex items-center">
+                <i class="fas fa-file-import mr-2"></i>
+                Import statement
+            </button>
+            <button @click="openModal('ingreso')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg shadow-lg transition flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Income
+            </button>
+            <button @click="openModal('gasto')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg shadow-lg transition flex items-center">
+                <i class="fas fa-minus mr-2"></i>
+                Expense
+            </button>
+        </div>
+    </div>
+
+    <input
+        x-ref="statementFile"
+        type="file"
+        class="hidden"
+        accept=".csv,.xlsx,.xlsm"
+        @change="importStatementFile($event)"
+    >
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-4">
+            <i class="fas fa-filter mr-2"></i> Filters
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Bank</label>
+                <select x-model="filtros.banco_id" @change="fetchTransacciones()"
+                        class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">All</option>
+                    <template x-for="banco in bancos" :key="banco.id">
+                        <option :value="banco.id" x-text="banco.nombre"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Type</label>
+                <select x-model="filtros.tipo" @change="fetchTransacciones()"
+                        class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">All</option>
+                    <option value="ingreso">Income</option>
+                    <option value="gasto">Expenses</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
+                <select x-model="filtros.categoria" @change="fetchTransacciones()"
+                        class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">All</option>
+                    <template x-for="cat in categorias" :key="cat">
+                        <option :value="cat" x-text="cat"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Search</label>
+                <input type="text" x-model="filtros.buscar" @input="filtrarLocal()"
+                       placeholder="Search description..."
+                       class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">From</label>
+                <input type="date" x-model="filtros.fecha_desde" @change="fetchTransacciones()"
+                       class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">To</label>
+                <input type="date" x-model="filtros.fecha_hasta" @change="fetchTransacciones()"
+                       class="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div class="flex items-end">
+                <button @click="limpiarFiltros()" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2">
+                    <i class="fas fa-times mr-1"></i> Clear filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total income (filtered)</p>
+            <p class="text-2xl font-bold text-green-600" x-text="formatMoney(totalIngresos)"></p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-red-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total expenses (filtered)</p>
+            <p class="text-2xl font-bold text-red-600" x-text="formatMoney(totalGastos)"></p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-purple-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Balance (filtered)</p>
+            <p class="text-2xl font-bold" :class="balance >= 0 ? 'text-green-600' : 'text-red-600'" x-text="formatMoney(balance)"></p>
+        </div>
+    </div>
+
+    <!-- Transactions table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Description</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Bank</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Amount</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="trans in transaccionesFiltradas" :key="trans.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300" x-text="trans.fecha"></td>
+                            <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200">
+                                <div class="flex items-center">
+                                    <span :class="trans.tipo === 'ingreso' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'"
+                                          class="w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                                        <i :class="trans.tipo === 'ingreso' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
+                                    </span>
+                                    <span x-text="trans.descripcion"></span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200" x-text="trans.categoria"></span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300" x-text="trans.banco_nombre"></td>
+                            <td class="px-6 py-4 text-sm font-bold text-right"
+                                :class="trans.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'">
+                                <span x-text="(trans.tipo === 'ingreso' ? '+' : '-') + formatMoney(trans.cantidad)"></span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <button @click="eliminarTransaccion(trans.id)" class="text-red-500 hover:text-red-700 p-2">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Empty state -->
+        <div x-show="transaccionesFiltradas.length === 0" class="text-center py-12">
+            <i class="fas fa-receipt text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">No transactions to display</p>
+        </div>
+    </div>
+
+    <!-- New transaction modal -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div @click.away="closeModal()" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="p-6 border-b" :class="form.tipo === 'ingreso' ? 'bg-green-50' : 'bg-red-50'">
+                <h3 class="text-xl font-bold" :class="form.tipo === 'ingreso' ? 'text-green-800' : 'text-red-800'">
+                    <i :class="form.tipo === 'ingreso' ? 'fas fa-plus-circle' : 'fas fa-minus-circle'" class="mr-2"></i>
+                    <span x-text="form.tipo === 'ingreso' ? 'New Income' : 'New Expense'"></span>
+                </h3>
+            </div>
+            <form @submit.prevent="guardarTransaccion()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bank account</label>
+                    <select x-model="form.banco_id" required
+                            class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select an account...</option>
+                        <template x-for="banco in bancos" :key="banco.id">
+                            <option :value="banco.id" x-text="banco.nombre"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (€)</label>
+                    <input type="number" step="0.01" min="0.01" x-model="form.cantidad" required
+                              class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 text-xl font-bold text-center dark:bg-gray-700 dark:text-white"
+                           placeholder="0.00">
+                </div>
+                <div>
+                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <input type="text" x-model="form.descripcion" required
+                              class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                              placeholder="e.g. Salary, Supermarket...">
+                </div>
+                <div>
+                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                    <select x-model="form.categoria" required
+                            class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                           <option value="">Select...</option>
+                        <template x-for="cat in (form.tipo === 'ingreso' ? categoriasIngreso : categoriasGasto)" :key="cat">
+                            <option :value="cat" x-text="cat"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                    <input type="date" x-model="form.fecha"
+                           class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (optional)</label>
+                    <textarea x-model="form.notas" rows="2"
+                              class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                              placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            :class="form.tipo === 'ingreso' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
+                            class="px-6 py-2 text-white rounded-lg">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function transaccionesData() {
+    return {
+        transacciones: [],
+        transaccionesFiltradas: [],
+        bancos: [],
+        showModal: false,
+        filtros: {
+            banco_id: '',
+            tipo: '',
+            categoria: '',
+            fecha_desde: '',
+            fecha_hasta: '',
+            buscar: ''
+        },
+        form: {
+            banco_id: '',
+            tipo: 'gasto',
+            cantidad: '',
+            descripcion: '',
+            categoria: '',
+            fecha: new Date().toISOString().split('T')[0],
+            notas: ''
+        },
+        categoriasGasto: ['alimentacion', 'transporte', 'vivienda', 'servicios', 'entretenimiento', 
+                          'salud', 'educacion', 'ropa', 'tecnologia', 'suscripciones', 'otros'],
+        categoriasIngreso: ['salario', 'freelance', 'inversiones', 'alquiler', 'regalo', 'reembolso', 'otros'],
+
+        get categorias() {
+            const cats = new Set();
+            this.transacciones.forEach(t => cats.add(t.categoria));
+            return Array.from(cats).sort();
+        },
+
+        get totalIngresos() {
+            return this.transaccionesFiltradas
+                .filter(t => t.tipo === 'ingreso')
+                .reduce((sum, t) => sum + parseFloat(t.cantidad), 0);
+        },
+
+        get totalGastos() {
+            return this.transaccionesFiltradas
+                .filter(t => t.tipo === 'gasto')
+                .reduce((sum, t) => sum + parseFloat(t.cantidad), 0);
+        },
+
+        get balance() {
+            return this.totalIngresos - this.totalGastos;
+        },
+
+        async init() {
+            // Read URL parameters
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('banco_id')) {
+                this.filtros.banco_id = params.get('banco_id');
+            }
+            
+            await this.fetchBancos();
+            await this.fetchTransacciones();
+        },
+
+        async fetchBancos() {
+            const res = await fetch('/api/bancos');
+            this.bancos = await res.json();
+        },
+
+        async fetchTransacciones() {
+            let url = '/api/transacciones?limite=200';
+            if (this.filtros.banco_id) url += `&banco_id=${this.filtros.banco_id}`;
+            if (this.filtros.tipo) url += `&tipo=${this.filtros.tipo}`;
+            if (this.filtros.categoria) url += `&categoria=${this.filtros.categoria}`;
+            if (this.filtros.fecha_desde) url += `&fecha_desde=${this.filtros.fecha_desde}`;
+            if (this.filtros.fecha_hasta) url += `&fecha_hasta=${this.filtros.fecha_hasta}`;
+            
+            const res = await fetch(url);
+            this.transacciones = await res.json();
+            this.filtrarLocal();
+        },
+
+        filtrarLocal() {
+            if (!this.filtros.buscar) {
+                this.transaccionesFiltradas = this.transacciones;
+            } else {
+                const buscar = this.filtros.buscar.toLowerCase();
+                this.transaccionesFiltradas = this.transacciones.filter(t => 
+                    t.descripcion.toLowerCase().includes(buscar)
+                );
+            }
+        },
+
+        limpiarFiltros() {
+            this.filtros = {
+                banco_id: '',
+                tipo: '',
+                categoria: '',
+                fecha_desde: '',
+                fecha_hasta: '',
+                buscar: ''
+            };
+            this.fetchTransacciones();
+        },
+
+        openModal(tipo) {
+            this.form.tipo = tipo;
+            this.showModal = true;
+        },
+
+        triggerStatementImport() {
+            if (!this.filtros.banco_id) {
+                alert('Select a bank in filters before importing a statement.');
+                return;
+            }
+            this.$refs.statementFile.click();
+        },
+
+        async importStatementFile(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('banco_id', this.filtros.banco_id);
+            formData.append('statement_file', file);
+            formData.append('categoria_default', 'otros');
+
+            const response = await fetch('/api/transactions/import-expenses', {
+                method: 'POST',
+                body: formData
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                alert(payload.detail || 'Statement import failed');
+                event.target.value = '';
+                return;
+            }
+
+            const errorsPreview = payload.errors?.length
+                ? `\nErrors: ${payload.errors.slice(0, 3).join(' | ')}`
+                : '';
+            alert(`Import completed. Imported: ${payload.imported_count}. Skipped: ${payload.skipped_count}.${errorsPreview}`);
+
+            await this.fetchTransacciones();
+            event.target.value = '';
+        },
+
+        closeModal() {
+            this.showModal = false;
+            this.form = {
+                banco_id: '',
+                tipo: 'gasto',
+                cantidad: '',
+                descripcion: '',
+                categoria: '',
+                fecha: new Date().toISOString().split('T')[0],
+                notas: ''
+            };
+        },
+
+        async guardarTransaccion() {
+            const payload = {
+                banco_id: parseInt(this.form.banco_id),
+                tipo: this.form.tipo,
+                cantidad: parseFloat(this.form.cantidad),
+                descripcion: this.form.descripcion,
+                categoria: this.form.categoria,
+                fecha: this.form.fecha || null,
+                notas: this.form.notas || null
+            };
+            
+            await fetch('/api/transacciones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            this.closeModal();
+            await this.fetchTransacciones();
+        },
+
+        async eliminarTransaccion(id) {
+            if (confirm('Delete this transaction?')) {
+                await fetch(`/api/transacciones/${id}`, { method: 'DELETE' });
+                await this.fetchTransacciones();
+            }
+        },
+
+        formatMoney(amount) {
+            if (amount === undefined || amount === null) return '€0.00';
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        }
+    };
+}
+</script>
+{% endblock %}

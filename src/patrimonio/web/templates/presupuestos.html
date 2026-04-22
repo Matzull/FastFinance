@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Budgets - Patrimonio{% endblock %}
+
+{% block content %}
+<div x-data="presupuestosData()" x-init="init()">
+    <!-- Cabecera -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+                <i class="fas fa-bullseye mr-2 text-purple-600"></i>
+                <span x-text="t('budgetsTitle')">Presupuestos</span>
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2" x-text="t('manageBudgets')">Gestiona tus límites de gasto</p>
+        </div>
+        <button @click="showModal = true" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg shadow-lg transition flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            <span x-text="t('newBudget')">Nuevo Presupuesto</span>
+        </button>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm" x-text="t('onTrack')">En buen camino</p>
+                    <p class="text-3xl font-bold text-green-600" x-text="presupuestosOk"></p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900 rounded-full p-3">
+                    <i class="fas fa-check text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm" x-text="t('atRisk')">En riesgo</p>
+                    <p class="text-3xl font-bold text-yellow-600" x-text="presupuestosRiesgo"></p>
+                </div>
+                <div class="bg-yellow-100 dark:bg-yellow-900 rounded-full p-3">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm" x-text="t('exceeded')">Excedidos</p>
+                    <p class="text-3xl font-bold text-red-600" x-text="presupuestosExcedidos"></p>
+                </div>
+                <div class="bg-red-100 dark:bg-red-900 rounded-full p-3">
+                    <i class="fas fa-times text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de presupuestos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="p in presupuestos" :key="p.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center">
+                            <div class="rounded-full p-3 mr-3" :style="'background-color: ' + p.color + '20'">
+                                <i :class="'fas ' + p.icono" :style="'color: ' + p.color"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white" x-text="p.nombre"></h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="p.categoria"></p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button @click="editarPresupuesto(p)" class="text-blue-500 hover:text-blue-700 p-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button @click="eliminarPresupuesto(p.id)" class="text-red-500 hover:text-red-700 p-2">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra de progreso -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600 dark:text-gray-400" x-text="formatMoney(p.gastado) + ' / ' + formatMoney(p.limite)"></span>
+                            <span :class="getStatusColor(p)" x-text="p.porcentaje.toFixed(0) + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                            <div class="h-3 rounded-full transition-all duration-500"
+                                 :style="'width: ' + Math.min(p.porcentaje, 100) + '%; background-color: ' + getBarColor(p)"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Info adicional -->
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="t('available')">Disponible</p>
+                            <p class="text-lg font-bold" :class="p.disponible >= 0 ? 'text-green-600' : 'text-red-600'" 
+                               x-text="formatMoney(p.disponible)"></p>
+                        </div>
+                        <div x-show="p.excedido" class="bg-red-100 dark:bg-red-900 text-red-600 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <span x-text="t('exceeded')">Excedido</span>
+                        </div>
+                        <div x-show="!p.excedido && p.porcentaje >= 80" class="bg-yellow-100 dark:bg-yellow-900 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            <span x-text="t('atRisk')">En riesgo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Mensaje vacío -->
+    <div x-show="presupuestos.length === 0" class="text-center py-16">
+        <i class="fas fa-bullseye text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <p class="text-gray-500 dark:text-gray-400 text-xl" x-text="t('noBudgets')">No tienes presupuestos configurados</p>
+        <button @click="showModal = true" class="mt-4 text-purple-600 hover:underline" x-text="t('addFirstBudget')">
+            Añade tu primer presupuesto
+        </button>
+    </div>
+
+    <!-- Modal para crear/editar -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div @click.away="closeModal()" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="p-6 border-b dark:border-gray-700">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white" x-text="editingPresupuesto ? t('editBudget') : t('newBudget')"></h3>
+            </div>
+            <form @submit.prevent="guardarPresupuesto()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" x-text="t('budgetName')">Nombre</label>
+                    <input type="text" x-model="form.nombre" required
+                           class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="e.g. Leisure, Dining out...">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" x-text="t('category')">Categoría</label>
+                    <select x-model="form.categoria" required
+                            class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                        <option value="alimentacion">🍔 Food</option>
+                        <option value="transporte">🚗 Transport</option>
+                        <option value="vivienda">🏠 Housing</option>
+                        <option value="servicios">📱 Utilities</option>
+                        <option value="entretenimiento">🎬 Entertainment</option>
+                        <option value="salud">💊 Health</option>
+                        <option value="educacion">📚 Education</option>
+                        <option value="ropa">👕 Clothing</option>
+                        <option value="tecnologia">💻 Technology</option>
+                        <option value="suscripciones">📅 Subscriptions</option>
+                        <option value="otros">📦 Other</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" x-text="t('limit')">Límite</label>
+                        <input type="number" step="0.01" x-model="form.limite" required
+                               class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" x-text="t('period')">Periodo</label>
+                        <select x-model="form.periodo"
+                                class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                            <option value="semanal">Weekly</option>
+                            <option value="mensual">Monthly</option>
+                            <option value="anual">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                        <input type="color" x-model="form.color"
+                               class="w-full h-10 rounded-lg cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon</label>
+                        <select x-model="form.icono"
+                                class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+                            <option value="fa-wallet">💰 Wallet</option>
+                            <option value="fa-utensils">🍴 Food</option>
+                            <option value="fa-car">🚗 Car</option>
+                            <option value="fa-home">🏠 Home</option>
+                            <option value="fa-gamepad">🎮 Leisure</option>
+                            <option value="fa-shopping-bag">🛍️ Shopping</option>
+                            <option value="fa-plane">✈️ Travel</option>
+                            <option value="fa-heart">❤️ Health</option>
+                            <option value="fa-graduation-cap">🎓 Education</option>
+                            <option value="fa-gift">🎁 Gifts</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" x-text="t('notes')">Notas</label>
+                    <textarea x-model="form.notas" rows="2"
+                              class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"></textarea>
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" @click="closeModal()" 
+                            class="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                            x-text="t('cancel')">Cancelar</button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                            x-text="t('save')">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function presupuestosData() {
+    return {
+        presupuestos: [],
+        showModal: false,
+        editingPresupuesto: null,
+        form: {
+            nombre: '',
+            categoria: 'entretenimiento',
+            limite: 100,
+            periodo: 'mensual',
+            color: '#8B5CF6',
+            icono: 'fa-wallet',
+            notas: ''
+        },
+
+        t(key) {
+            return getTranslation(key);
+        },
+
+        async init() {
+            await this.fetchPresupuestos();
+        },
+
+        async fetchPresupuestos() {
+            const res = await fetch('/api/presupuestos/estado');
+            this.presupuestos = await res.json();
+        },
+
+        get presupuestosOk() {
+            return this.presupuestos.filter(p => !p.excedido && p.porcentaje < 80).length;
+        },
+
+        get presupuestosRiesgo() {
+            return this.presupuestos.filter(p => !p.excedido && p.porcentaje >= 80).length;
+        },
+
+        get presupuestosExcedidos() {
+            return this.presupuestos.filter(p => p.excedido).length;
+        },
+
+        formatMoney(amount) {
+            if (amount === undefined || amount === null) return '€0.00';
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        },
+
+        getStatusColor(p) {
+            if (p.excedido) return 'text-red-600 font-bold';
+            if (p.porcentaje >= 80) return 'text-yellow-600 font-bold';
+            return 'text-green-600';
+        },
+
+        getBarColor(p) {
+            if (p.excedido) return '#EF4444';
+            if (p.porcentaje >= 80) return '#F59E0B';
+            return '#10B981';
+        },
+
+        async guardarPresupuesto() {
+            const url = this.editingPresupuesto 
+                ? `/api/presupuestos/${this.editingPresupuesto.id}`
+                : '/api/presupuestos';
+            const method = this.editingPresupuesto ? 'PUT' : 'POST';
+
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.form)
+            });
+
+            await this.fetchPresupuestos();
+            this.closeModal();
+        },
+
+        editarPresupuesto(p) {
+            this.editingPresupuesto = p;
+            this.form = {
+                nombre: p.nombre,
+                categoria: p.categoria,
+                limite: p.limite,
+                periodo: 'mensual',
+                color: p.color,
+                icono: p.icono,
+                notas: ''
+            };
+            this.showModal = true;
+        },
+
+        async eliminarPresupuesto(id) {
+            if (!confirm(this.t('confirmDelete'))) return;
+            await fetch(`/api/presupuestos/${id}`, { method: 'DELETE' });
+            await this.fetchPresupuestos();
+        },
+
+        closeModal() {
+            this.showModal = false;
+            this.editingPresupuesto = null;
+            this.form = {
+                nombre: '',
+                categoria: 'entretenimiento',
+                limite: 100,
+                periodo: 'mensual',
+                color: '#8B5CF6',
+                icono: 'fa-wallet',
+                notas: ''
+            };
+        }
+    };
+}
+</script>
+{% endblock %}

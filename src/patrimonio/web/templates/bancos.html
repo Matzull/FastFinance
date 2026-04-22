@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Banks - Patrimonio{% endblock %}
+
+{% block content %}
+<div x-data="bancosData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-university mr-2 text-blue-600"></i>
+                Bank Accounts
+            </h1>
+            <p class="text-gray-600 mt-2">Manage your accounts and track balances</p>
+        </div>
+        <button @click="showModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            New Account
+        </button>
+    </div>
+
+    <!-- Balance summary -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-blue-100 text-sm">Total across all accounts</p>
+                <p class="text-4xl font-bold" x-text="formatMoney(totalSaldo)"></p>
+            </div>
+            <div class="text-6xl opacity-20">
+                <i class="fas fa-piggy-bank"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank list -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="banco in bancos" :key="banco.id">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800" x-text="banco.nombre"></h3>
+                            <p class="text-sm text-gray-500" x-text="banco.tipo_cuenta"></p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button @click="editarBanco(banco)" class="text-blue-500 hover:text-blue-700 p-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button @click="eliminarBanco(banco.id)" class="text-red-500 hover:text-red-700 p-2">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t pt-4">
+                        <p class="text-sm text-gray-500">Current balance</p>
+                        <p class="text-2xl font-bold" 
+                           :class="parseFloat(banco.saldo_actual) >= 0 ? 'text-green-600' : 'text-red-600'"
+                           x-text="formatMoney(banco.saldo_actual)"></p>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-between text-sm text-gray-500">
+                        <span><i class="fas fa-coins mr-1"></i> <span x-text="banco.moneda"></span></span>
+                        <span x-show="banco.notas" class="text-gray-400" :title="banco.notas">
+                            <i class="fas fa-sticky-note"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-3 flex justify-between items-center">
+                    <span class="text-xs text-gray-500">
+                        Initial balance: <span x-text="formatMoney(banco.saldo_inicial)"></span>
+                    </span>
+                    <a :href="'/transacciones?banco_id=' + banco.id" class="text-blue-600 text-sm hover:underline">
+                        View transactions <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="bancos.length === 0" class="text-center py-16">
+        <i class="fas fa-university text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-xl">You have no registered bank accounts</p>
+        <button @click="showModal = true" class="mt-4 text-blue-600 hover:underline">
+            Add your first account
+        </button>
+    </div>
+
+    <!-- Create/edit modal -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div @click.away="closeModal()" class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800" x-text="editingBanco ? 'Edit account' : 'New account'"></h3>
+            </div>
+            <form @submit.prevent="guardarBanco()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank/account name</label>
+                    <input type="text" x-model="form.nombre" required
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="e.g. BBVA, Main account...">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account type</label>
+                    <select x-model="form.tipo_cuenta" required
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select...</option>
+                        <option value="corriente">Checking account</option>
+                        <option value="ahorro">Savings account</option>
+                        <option value="inversion">Investment account</option>
+                        <option value="efectivo">Cash</option>
+                        <option value="cripto">Cryptocurrency</option>
+                    </select>
+                </div>
+                <div x-show="!editingBanco">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Initial balance</label>
+                    <input type="number" step="0.01" x-model="form.saldo_inicial"
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                    <select x-model="form.moneda"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="USD">USD - Dollar</option>
+                        <option value="GBP">GBP - Pound</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                    <textarea x-model="form.notas" rows="2"
+                              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <span x-text="editingBanco ? 'Save changes' : 'Create account'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function bancosData() {
+    return {
+        bancos: [],
+        showModal: false,
+        editingBanco: null,
+        form: {
+            nombre: '',
+            tipo_cuenta: '',
+            saldo_inicial: 0,
+            moneda: 'EUR',
+            notas: ''
+        },
+
+        get totalSaldo() {
+            return this.bancos.reduce((sum, b) => sum + parseFloat(b.saldo_actual || 0), 0);
+        },
+
+        async init() {
+            await this.fetchBancos();
+        },
+
+        async fetchBancos() {
+            const res = await fetch('/api/bancos');
+            this.bancos = await res.json();
+        },
+
+        async guardarBanco() {
+            const url = this.editingBanco ? `/api/bancos/${this.editingBanco.id}` : '/api/bancos';
+            const method = this.editingBanco ? 'PUT' : 'POST';
+            
+            await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.form)
+            });
+            
+            this.closeModal();
+            await this.fetchBancos();
+        },
+
+        editarBanco(banco) {
+            this.editingBanco = banco;
+            this.form = {
+                nombre: banco.nombre,
+                tipo_cuenta: banco.tipo_cuenta,
+                saldo_inicial: banco.saldo_inicial,
+                moneda: banco.moneda,
+                notas: banco.notas || ''
+            };
+            this.showModal = true;
+        },
+
+        async eliminarBanco(id) {
+            if (confirm('Are you sure you want to remove this account?')) {
+                await fetch(`/api/bancos/${id}`, { method: 'DELETE' });
+                await this.fetchBancos();
+            }
+        },
+
+        closeModal() {
+            this.showModal = false;
+            this.editingBanco = null;
+            this.form = {
+                nombre: '',
+                tipo_cuenta: '',
+                saldo_inicial: 0,
+                moneda: 'EUR',
+                notas: ''
+            };
+        },
+
+        formatMoney(amount) {
+            if (amount === undefined || amount === null) return '€0.00';
+            return new Intl.NumberFormat('en-IE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        }
+    };
+}
+</script>
+{% endblock %}

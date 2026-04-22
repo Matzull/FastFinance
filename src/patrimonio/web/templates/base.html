@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en" x-data="appSettings()" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Patrimonio{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Alpine.js para interactividad -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+        }
+    </style>
+    
+    <!-- Sistema de traducciones -->
+    <script>
+        const translations = {
+            es: {
+                // Navegación
+                dashboard: 'Dashboard',
+                banks: 'Bancos',
+                transactions: 'Transacciones',
+                subscriptions: 'Suscripciones',
+                patrimony: 'Patrimonio',
+                budgets: 'Presupuestos',
+                insights: 'Insights',
+                
+                // Dashboard
+                financialDashboard: 'Dashboard Financiero',
+                generalSummary: 'Resumen general de tu patrimonio',
+                netWorth: 'Patrimonio Neto',
+                totalInBanks: 'Total en Bancos',
+                monthlyBalance: 'Balance del Mes',
+                subscriptionsMonth: 'Suscripciones/mes',
+                monthlyEvolution: 'Evolución Mensual',
+                expensesByCategory: 'Gastos por Categoría',
+                balanceByBank: 'Saldo por Banco',
+                recentTransactions: 'Últimas Transacciones',
+                income: 'Ingresos',
+                expenses: 'Gastos',
+                balance: 'Balance',
+                
+                // Bancos
+                bankAccounts: 'Cuentas Bancarias',
+                manageAccounts: 'Gestiona tus cuentas y visualiza tus saldos',
+                newAccount: 'Nueva Cuenta',
+                totalAllAccounts: 'Total en todas las cuentas',
+                currentBalance: 'Saldo actual',
+                initialBalance: 'Saldo inicial',
+                viewMovements: 'Ver movimientos',
+                noBanksRegistered: 'No tienes cuentas bancarias registradas',
+                addFirstAccount: 'Añade tu primera cuenta',
+                editAccount: 'Editar Cuenta',
+                bankName: 'Nombre del banco/cuenta',
+                accountType: 'Tipo de cuenta',
+                currency: 'Moneda',
+                notes: 'Notas (opcional)',
+                cancel: 'Cancelar',
+                save: 'Guardar',
+                
+                // Transacciones
+                allTransactions: 'Todas las Transacciones',
+                filterAndManage: 'Filtra y gestiona tus movimientos',
+                newTransaction: 'Nueva Transacción',
+                filters: 'Filtros',
+                allBanks: 'Todos los bancos',
+                allTypes: 'Todos los tipos',
+                type: 'Tipo',
+                amount: 'Cantidad',
+                description: 'Descripción',
+                category: 'Categoría',
+                date: 'Fecha',
+                bank: 'Banco',
+                actions: 'Acciones',
+                noTransactions: 'No hay transacciones registradas',
+                addFirstTransaction: 'Añade tu primera transacción',
+                editTransaction: 'Editar Transacción',
+                
+                // Suscripciones
+                activeSubscriptions: 'Suscripciones Activas',
+                manageRecurring: 'Gestiona tus pagos recurrentes',
+                newSubscription: 'Nueva Suscripción',
+                monthlyTotal: 'Total mensual',
+                annualProjected: 'Proyección anual',
+                frequency: 'Frecuencia',
+                monthlyCost: 'Coste mensual',
+                startDate: 'Fecha inicio',
+                noSubscriptions: 'No tienes suscripciones activas',
+                addFirstSubscription: 'Añade tu primera suscripción',
+                editSubscription: 'Editar Suscripción',
+                subscriptionName: 'Nombre de la suscripción',
+                
+                // Patrimonio
+                patrimonyTitle: 'Tu Patrimonio',
+                assetsAndLiabilities: 'Activos, pasivos e inversiones',
+                newItem: 'Nuevo Elemento',
+                assets: 'Activos',
+                liabilities: 'Pasivos',
+                netPatrimony: 'Patrimonio Neto',
+                noPatrimony: 'No tienes elementos de patrimonio registrados',
+                addFirstItem: 'Añade tu primer activo o pasivo',
+                editItem: 'Editar Elemento',
+                itemName: 'Nombre',
+                currentValue: 'Valor actual',
+                
+                // Categorías
+                food: 'Alimentación',
+                transport: 'Transporte',
+                housing: 'Vivienda',
+                services: 'Servicios',
+                entertainment: 'Entretenimiento',
+                health: 'Salud',
+                education: 'Educación',
+                clothing: 'Ropa',
+                technology: 'Tecnología',
+                other: 'Otros',
+                salary: 'Salario',
+                freelance: 'Freelance',
+                investments: 'Inversiones',
+                rent: 'Alquiler',
+                gift: 'Regalo',
+                refund: 'Reembolso',
+                
+                // Frecuencias
+                daily: 'Diaria',
+                weekly: 'Semanal',
+                monthly: 'Mensual',
+                annual: 'Anual',
+                
+                // Tipos de cuenta
+                checking: 'Corriente',
+                savings: 'Ahorro',
+                investment: 'Inversión',
+                
+                // Común
+                footer: '© 2026 Patrimonio - Gestor de Finanzas Personales',
+                darkMode: 'Modo oscuro',
+                lightMode: 'Modo claro',
+                language: 'Idioma',
+                delete: 'Eliminar',
+                edit: 'Editar',
+                confirmDelete: '¿Estás seguro de que quieres eliminar esto?',
+                
+                // Presupuestos
+                budgetsTitle: 'Presupuestos',
+                manageBudgets: 'Gestiona tus límites de gasto',
+                newBudget: 'Nuevo Presupuesto',
+                budgetName: 'Nombre del presupuesto',
+                limit: 'Límite',
+                spent: 'Gastado',
+                available: 'Disponible',
+                period: 'Periodo',
+                noBudgets: 'No tienes presupuestos configurados',
+                addFirstBudget: 'Añade tu primer presupuesto',
+                editBudget: 'Editar Presupuesto',
+                exceeded: 'Excedido',
+                atRisk: 'En riesgo',
+                onTrack: 'En buen camino',
+                
+                // Insights
+                insightsTitle: 'Insights Financieros',
+                financialAnalysis: 'Análisis y recomendaciones personalizadas',
+                alerts: 'Alertas',
+                monthSummary: 'Resumen del Mes',
+                averages: 'Promedios',
+                projections: 'Proyecciones',
+                savingsRate: 'Tasa de Ahorro',
+                topCategory: 'Mayor Gasto',
+                vsLastMonth: 'vs mes anterior',
+                dailyAverage: 'Promedio diario',
+                projectedExpense: 'Gasto proyectado',
+                daysRemaining: 'Días restantes',
+            },
+            en: {
+                // Navigation
+                dashboard: 'Dashboard',
+                banks: 'Banks',
+                transactions: 'Transactions',
+                subscriptions: 'Subscriptions',
+                patrimony: 'Patrimony',
+                budgets: 'Budgets',
+                insights: 'Insights',
+                
+                // Dashboard
+                financialDashboard: 'Financial Dashboard',
+                generalSummary: 'General overview of your patrimony',
+                netWorth: 'Net Worth',
+                totalInBanks: 'Total in Banks',
+                monthlyBalance: 'Monthly Balance',
+                subscriptionsMonth: 'Subscriptions/month',
+                monthlyEvolution: 'Monthly Evolution',
+                expensesByCategory: 'Expenses by Category',
+                balanceByBank: 'Balance by Bank',
+                recentTransactions: 'Recent Transactions',
+                income: 'Income',
+                expenses: 'Expenses',
+                balance: 'Balance',
+                
+                // Banks
+                bankAccounts: 'Bank Accounts',
+                manageAccounts: 'Manage your accounts and view your balances',
+                newAccount: 'New Account',
+                totalAllAccounts: 'Total in all accounts',
+                currentBalance: 'Current balance',
+                initialBalance: 'Initial balance',
+                viewMovements: 'View movements',
+                noBanksRegistered: 'You have no registered bank accounts',
+                addFirstAccount: 'Add your first account',
+                editAccount: 'Edit Account',
+                bankName: 'Bank/account name',
+                accountType: 'Account type',
+                currency: 'Currency',
+                notes: 'Notes (optional)',
+                cancel: 'Cancel',
+                save: 'Save',
+                
+                // Transactions
+                allTransactions: 'All Transactions',
+                filterAndManage: 'Filter and manage your movements',
+                newTransaction: 'New Transaction',
+                filters: 'Filters',
+                allBanks: 'All banks',
+                allTypes: 'All types',
+                type: 'Type',
+                amount: 'Amount',
+                description: 'Description',
+                category: 'Category',
+                date: 'Date',
+                bank: 'Bank',
+                actions: 'Actions',
+                noTransactions: 'No transactions registered',
+                addFirstTransaction: 'Add your first transaction',
+                editTransaction: 'Edit Transaction',
+                
+                // Subscriptions
+                activeSubscriptions: 'Active Subscriptions',
+                manageRecurring: 'Manage your recurring payments',
+                newSubscription: 'New Subscription',
+                monthlyTotal: 'Monthly total',
+                annualProjected: 'Annual projection',
+                frequency: 'Frequency',
+                monthlyCost: 'Monthly cost',
+                startDate: 'Start date',
+                noSubscriptions: 'You have no active subscriptions',
+                addFirstSubscription: 'Add your first subscription',
+                editSubscription: 'Edit Subscription',
+                subscriptionName: 'Subscription name',
+                
+                // Patrimony
+                patrimonyTitle: 'Your Patrimony',
+                assetsAndLiabilities: 'Assets, liabilities and investments',
+                newItem: 'New Item',
+                assets: 'Assets',
+                liabilities: 'Liabilities',
+                netPatrimony: 'Net Patrimony',
+                noPatrimony: 'You have no patrimony items registered',
+                addFirstItem: 'Add your first asset or liability',
+                editItem: 'Edit Item',
+                itemName: 'Name',
+                currentValue: 'Current value',
+                
+                // Categories
+                food: 'Food',
+                transport: 'Transport',
+                housing: 'Housing',
+                services: 'Services',
+                entertainment: 'Entertainment',
+                health: 'Health',
+                education: 'Education',
+                clothing: 'Clothing',
+                technology: 'Technology',
+                other: 'Other',
+                salary: 'Salary',
+                freelance: 'Freelance',
+                investments: 'Investments',
+                rent: 'Rent',
+                gift: 'Gift',
+                refund: 'Refund',
+                
+                // Frequencies
+                daily: 'Daily',
+                weekly: 'Weekly',
+                monthly: 'Monthly',
+                annual: 'Annual',
+                
+                // Account types
+                checking: 'Checking',
+                savings: 'Savings',
+                investment: 'Investment',
+                
+                // Common
+                footer: '© 2026 Patrimony - Personal Finance Manager',
+                darkMode: 'Dark mode',
+                lightMode: 'Light mode',
+                language: 'Language',
+                delete: 'Delete',
+                edit: 'Edit',
+                confirmDelete: 'Are you sure you want to delete this?',
+                
+                // Budgets
+                budgetsTitle: 'Budgets',
+                manageBudgets: 'Manage your spending limits',
+                newBudget: 'New Budget',
+                budgetName: 'Budget name',
+                limit: 'Limit',
+                spent: 'Spent',
+                available: 'Available',
+                period: 'Period',
+                noBudgets: 'You have no budgets configured',
+                addFirstBudget: 'Add your first budget',
+                editBudget: 'Edit Budget',
+                exceeded: 'Exceeded',
+                atRisk: 'At risk',
+                onTrack: 'On track',
+                
+                // Insights
+                insightsTitle: 'Financial Insights',
+                financialAnalysis: 'Personalized analysis and recommendations',
+                alerts: 'Alerts',
+                monthSummary: 'Month Summary',
+                averages: 'Averages',
+                projections: 'Projections',
+                savingsRate: 'Savings Rate',
+                topCategory: 'Top Expense',
+                vsLastMonth: 'vs last month',
+                dailyAverage: 'Daily average',
+                projectedExpense: 'Projected expense',
+                daysRemaining: 'Days remaining',
+            }
+        };
+
+        translations.es = { ...translations.en };
+        
+        function appSettings() {
+            return {
+                darkMode: localStorage.getItem('darkMode') === 'true',
+                language: localStorage.getItem('language') || 'en',
+                
+                init() {
+                    window.translations = translations;
+                    window.t = (key) => this.t(key);
+                    window.currentLang = this.language;
+                    this.$watch('darkMode', val => localStorage.setItem('darkMode', val));
+                    this.$watch('language', val => {
+                        localStorage.setItem('language', val);
+                        document.documentElement.lang = val;
+                        window.currentLang = val;
+                    });
+                },
+                
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                },
+                
+                toggleLanguage() {
+                    this.language = this.language === 'es' ? 'en' : 'es';
+                },
+                
+                t(key) {
+                    return translations[this.language]?.[key] || translations['en'][key] || key;
+                }
+            }
+        }
+        
+        // Función global para acceder a traducciones desde otros componentes
+        function getTranslation(key, lang) {
+            const currentLang = lang || localStorage.getItem('language') || 'en';
+            return translations[currentLang]?.[key] || translations['en'][key] || key;
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <!-- Navegación -->
+    <nav class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <a href="/" class="flex items-center space-x-2 text-white">
+                    <i class="fas fa-wallet text-2xl"></i>
+                    <span class="font-bold text-xl">Patrimonio</span>
+                </a>
+                <div class="flex items-center space-x-6">
+                    <a href="/" class="text-white hover:text-gray-200 transition {% if active_page == 'dashboard' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-chart-pie mr-1"></i> <span x-text="t('dashboard')">Dashboard</span>
+                    </a>
+                    <a href="/bancos" class="text-white hover:text-gray-200 transition {% if active_page == 'bancos' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-university mr-1"></i> <span x-text="t('banks')">Bancos</span>
+                    </a>
+                    <a href="/transacciones" class="text-white hover:text-gray-200 transition {% if active_page == 'transacciones' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-exchange-alt mr-1"></i> <span x-text="t('transactions')">Transacciones</span>
+                    </a>
+                    <a href="/suscripciones" class="text-white hover:text-gray-200 transition {% if active_page == 'suscripciones' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-sync-alt mr-1"></i> <span x-text="t('subscriptions')">Suscripciones</span>
+                    </a>
+                    <a href="/presupuestos" class="text-white hover:text-gray-200 transition {% if active_page == 'presupuestos' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-bullseye mr-1"></i> <span x-text="t('budgets')">Presupuestos</span>
+                    </a>
+                    <a href="/insights" class="text-white hover:text-gray-200 transition {% if active_page == 'insights' %}border-b-2 border-white{% endif %}">
+                        <i class="fas fa-lightbulb mr-1"></i> <span x-text="t('insights')">Insights</span>
+                    </a>
+                    
+                    <!-- Separador -->
+                    <div class="border-l border-white/30 h-6"></div>
+                    
+                    <!-- Selector de idioma -->
+                    <button @click="toggleLanguage()" class="text-white hover:text-gray-200 transition flex items-center" :title="t('language')">
+                        <i class="fas fa-globe mr-1"></i>
+                        <span x-text="language.toUpperCase()" class="text-sm font-medium"></span>
+                    </button>
+                    
+                    <!-- Toggle modo oscuro -->
+                    <button @click="toggleDarkMode()" class="text-white hover:text-gray-200 transition" :title="darkMode ? t('lightMode') : t('darkMode')">
+                        <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'" class="text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 dark:bg-gray-950 text-white py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p x-text="t('footer')">© 2026 Patrimonio - Gestor de Finanzas Personales</p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
