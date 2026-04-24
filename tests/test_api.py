@@ -70,9 +70,7 @@ class TestAPIBancos:
         """Lista bancos existentes."""
         client, db = client
         # Crear banco
-        db.create_bank(
-            nombre="Test Bank", tipo_cuenta="ahorro", saldo_inicial=Decimal("500")
-        )
+        db.create_bank(nombre="Test Bank", tipo_cuenta="ahorro", saldo_inicial=Decimal("500"))
 
         response = client.get("/api/bancos")
         assert response.status_code == 200
@@ -415,9 +413,7 @@ class TestAPIPatrimonio:
     def test_eliminar_patrimonio(self, client):
         """Puede eliminar un elemento del patrimonio."""
         client, db = client
-        pat = db.create_net_worth_item(
-            nombre="Eliminar", tipo="activo", valor=Decimal("100")
-        )
+        pat = db.create_net_worth_item(nombre="Eliminar", tipo="activo", valor=Decimal("100"))
 
         response = client.delete(f"/api/patrimonio/{pat.id}")
         assert response.status_code == 200
@@ -462,9 +458,7 @@ class TestAPIResumen:
     def test_saldo_por_banco(self, client):
         """Puede obtener el saldo por banco."""
         client, db = client
-        db.create_bank(
-            nombre="Banco 1", tipo_cuenta="corriente", saldo_inicial=Decimal("1000")
-        )
+        db.create_bank(nombre="Banco 1", tipo_cuenta="corriente", saldo_inicial=Decimal("1000"))
 
         response = client.get("/api/estadisticas/saldo-bancos")
         assert response.status_code == 200
@@ -582,9 +576,7 @@ class TestAPIPresupuestos:
             periodo=PeriodoPresupuesto.MENSUAL,
         )
 
-        response = client.put(
-            f"/api/presupuestos/{presupuesto.id}", json={"limite": "600.00"}
-        )
+        response = client.put(f"/api/presupuestos/{presupuesto.id}", json={"limite": "600.00"})
         assert response.status_code == 200
         assert float(response.json()["limite"]) == 600.00
 

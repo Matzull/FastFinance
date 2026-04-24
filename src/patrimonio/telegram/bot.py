@@ -79,9 +79,7 @@ Soy tu asistente para gestionar tus finanzas.
 
     async def balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
-        await update.message.reply_text(
-            self.service.get_balance_message(), parse_mode="Markdown"
-        )
+        await update.message.reply_text(self.service.get_balance_message(), parse_mode="Markdown")
 
     async def summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
@@ -89,9 +87,7 @@ Soy tu asistente para gestionar tus finanzas.
             self.service.get_monthly_summary_message(), parse_mode="Markdown"
         )
 
-    async def expenses(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def expenses(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
         await update.message.reply_text(
             self.service.get_recent_expenses_message(), parse_mode="Markdown"
@@ -103,21 +99,15 @@ Soy tu asistente para gestionar tus finanzas.
             self.service.get_recent_income_message(), parse_mode="Markdown"
         )
 
-    async def subscriptions(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def subscriptions(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
         await update.message.reply_text(
             self.service.get_subscriptions_message(), parse_mode="Markdown"
         )
 
-    async def net_worth(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def net_worth(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
-        await update.message.reply_text(
-            self.service.get_net_worth_message(), parse_mode="Markdown"
-        )
+        await update.message.reply_text(self.service.get_net_worth_message(), parse_mode="Markdown")
 
     async def manual_expense(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -131,17 +121,13 @@ Soy tu asistente para gestionar tus finanzas.
             await update.message.reply_text("❌ Cantidad invalida.")
             return None
         description = " ".join(context.args[1:])
-        error = self.service.create_manual_expense(
-            update.effective_user.id, amount, description
-        )
+        error = self.service.create_manual_expense(update.effective_user.id, amount, description)
         if error:
             await update.message.reply_text(error)
             return None
         return await self._ask_bank(update)
 
-    async def manual_income(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int | None:
+    async def manual_income(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | None:
         if not context.args or len(context.args) < 2:
             await update.message.reply_text("❌ Uso: /ingreso <cantidad> <descripcion>")
             return None
@@ -151,17 +137,13 @@ Soy tu asistente para gestionar tus finanzas.
             await update.message.reply_text("❌ Cantidad invalida.")
             return None
         description = " ".join(context.args[1:])
-        error = self.service.create_manual_income(
-            update.effective_user.id, amount, description
-        )
+        error = self.service.create_manual_income(update.effective_user.id, amount, description)
         if error:
             await update.message.reply_text(error)
             return None
         return await self._ask_bank(update)
 
-    async def process_photo(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def process_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         del context
         await update.message.reply_text("🔍 Analizando ticket...")
         photo = update.message.photo[-1]
@@ -178,15 +160,11 @@ Soy tu asistente para gestionar tus finanzas.
             [
                 [
                     InlineKeyboardButton("✏️ Editar", callback_data="edit_ticket"),
-                    InlineKeyboardButton(
-                        "✅ Confirmar", callback_data="confirm_ticket"
-                    ),
+                    InlineKeyboardButton("✅ Confirmar", callback_data="confirm_ticket"),
                 ]
             ]
         )
-        await update.message.reply_text(
-            message, parse_mode="Markdown", reply_markup=keyboard
-        )
+        await update.message.reply_text(message, parse_mode="Markdown", reply_markup=keyboard)
         return WAITING_EDIT_FIELD
 
     async def _ask_bank(self, update: Update) -> int:
@@ -217,16 +195,10 @@ Soy tu asistente para gestionar tus finanzas.
                 await query.edit_message_text("❌ No hay cuentas bancarias.")
                 return ConversationHandler.END
             keyboard = [
-                [
-                    InlineKeyboardButton(
-                        f"🏦 {bank.nombre}", callback_data=f"bank_{bank.id}"
-                    )
-                ]
+                [InlineKeyboardButton(f"🏦 {bank.nombre}", callback_data=f"bank_{bank.id}")]
                 for bank in banks
             ]
-            keyboard.append(
-                [InlineKeyboardButton("❌ Cancelar", callback_data="cancel")]
-            )
+            keyboard.append([InlineKeyboardButton("❌ Cancelar", callback_data="cancel")])
             await query.edit_message_text(
                 "🏦 Selecciona la cuenta:", reply_markup=InlineKeyboardMarkup(keyboard)
             )
@@ -249,11 +221,7 @@ Soy tu asistente para gestionar tus finanzas.
             )
         if data.get("date") is not None:
             keyboard.append(
-                [
-                    InlineKeyboardButton(
-                        f"📅 Fecha: {data['date']}", callback_data="field_date"
-                    )
-                ]
+                [InlineKeyboardButton(f"📅 Fecha: {data['date']}", callback_data="field_date")]
             )
         if data.get("merchant"):
             keyboard.append(
@@ -273,9 +241,7 @@ Soy tu asistente para gestionar tus finanzas.
                     )
                 ]
             )
-        keyboard.append(
-            [InlineKeyboardButton("← Volver", callback_data="back_to_summary")]
-        )
+        keyboard.append([InlineKeyboardButton("← Volver", callback_data="back_to_summary")])
         await query.edit_message_text(
             "✏️ *Que deseas editar?*",
             parse_mode="Markdown",
@@ -283,9 +249,7 @@ Soy tu asistente para gestionar tus finanzas.
         )
         return WAITING_EDIT_FIELD
 
-    async def select_edit_field(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def select_edit_field(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         query = update.callback_query
         await query.answer()
         user_id = update.effective_user.id
@@ -296,9 +260,7 @@ Soy tu asistente para gestionar tus finanzas.
                 [
                     [
                         InlineKeyboardButton("✏️ Editar", callback_data="edit_ticket"),
-                        InlineKeyboardButton(
-                            "✅ Confirmar", callback_data="confirm_ticket"
-                        ),
+                        InlineKeyboardButton("✅ Confirmar", callback_data="confirm_ticket"),
                     ]
                 ]
             )
@@ -329,9 +291,7 @@ Soy tu asistente para gestionar tus finanzas.
         await query.edit_message_text(prompt_map[field_name])
         return WAITING_EDIT_VALUE
 
-    async def process_edit_value(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def process_edit_value(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         user_id = update.effective_user.id
         field_name = context.user_data.get("edit_field")
         if not field_name:
@@ -349,9 +309,7 @@ Soy tu asistente para gestionar tus finanzas.
             [
                 [
                     InlineKeyboardButton("✏️ Editar", callback_data="edit_ticket"),
-                    InlineKeyboardButton(
-                        "✅ Confirmar", callback_data="confirm_ticket"
-                    ),
+                    InlineKeyboardButton("✅ Confirmar", callback_data="confirm_ticket"),
                 ]
             ]
         )
@@ -363,9 +321,7 @@ Soy tu asistente para gestionar tus finanzas.
         )
         return WAITING_EDIT_FIELD
 
-    async def select_bank(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def select_bank(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         del context
         query = update.callback_query
         await query.answer()
@@ -382,9 +338,7 @@ Soy tu asistente para gestionar tus finanzas.
             return ConversationHandler.END
 
         data = self.service.get_editable_data_dict(update.effective_user.id)
-        categories = self.service.list_categories(
-            data["transaction_type"] == TipoTransaccion.GASTO
-        )
+        categories = self.service.list_categories(data["transaction_type"] == TipoTransaccion.GASTO)
         keyboard = []
         row = []
         for category in categories:
@@ -404,9 +358,7 @@ Soy tu asistente para gestionar tus finanzas.
         )
         return WAITING_CATEGORY
 
-    async def select_category(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def select_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         del context
         query = update.callback_query
         await query.answer()
@@ -415,9 +367,7 @@ Soy tu asistente para gestionar tus finanzas.
             await query.edit_message_text("❌ Operacion cancelada.")
             return ConversationHandler.END
 
-        error = self.service.set_category(
-            update.effective_user.id, query.data.replace("cat_", "")
-        )
+        error = self.service.set_category(update.effective_user.id, query.data.replace("cat_", ""))
         if error:
             await query.edit_message_text(error)
             return ConversationHandler.END
@@ -434,14 +384,10 @@ Soy tu asistente para gestionar tus finanzas.
                 ]
             ]
         )
-        await query.edit_message_text(
-            message, parse_mode="Markdown", reply_markup=keyboard
-        )
+        await query.edit_message_text(message, parse_mode="Markdown", reply_markup=keyboard)
         return WAITING_CONFIRMATION
 
-    async def confirm_transaction(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> int:
+    async def confirm_transaction(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         del context
         query = update.callback_query
         await query.answer()
@@ -479,20 +425,14 @@ Soy tu asistente para gestionar tus finanzas.
                     ),
                 ],
                 WAITING_EDIT_VALUE: [
-                    MessageHandler(
-                        filters.TEXT & ~filters.COMMAND, self.process_edit_value
-                    )
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, self.process_edit_value)
                 ],
-                WAITING_BANK: [
-                    CallbackQueryHandler(self.select_bank, pattern="^bank_|^cancel$")
-                ],
+                WAITING_BANK: [CallbackQueryHandler(self.select_bank, pattern="^bank_|^cancel$")],
                 WAITING_CATEGORY: [
                     CallbackQueryHandler(self.select_category, pattern="^cat_|^cancel$")
                 ],
                 WAITING_CONFIRMATION: [
-                    CallbackQueryHandler(
-                        self.confirm_transaction, pattern="^confirm$|^cancel$"
-                    )
+                    CallbackQueryHandler(self.confirm_transaction, pattern="^confirm$|^cancel$")
                 ],
             },
             fallbacks=[CommandHandler("cancelar", self.cancel)],

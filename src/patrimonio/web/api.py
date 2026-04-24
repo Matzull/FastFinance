@@ -359,15 +359,11 @@ def get_summary():
 
     with db.get_session() as session:
         total_activos = session.scalar(
-            select(func.sum(PatrimonioModel.valor)).where(
-                PatrimonioModel.tipo == "activo"
-            )
+            select(func.sum(PatrimonioModel.valor)).where(PatrimonioModel.tipo == "activo")
         ) or Decimal("0")
 
         total_pasivos = session.scalar(
-            select(func.sum(PatrimonioModel.valor)).where(
-                PatrimonioModel.tipo == "pasivo"
-            )
+            select(func.sum(PatrimonioModel.valor)).where(PatrimonioModel.tipo == "pasivo")
         ) or Decimal("0")
 
     patrimonio_neto = total_bancos + total_activos - total_pasivos
@@ -384,9 +380,7 @@ def get_summary():
     )
 
 
-@router.get(
-    "/estadisticas/gastos-por-categoria", response_model=list[GastosPorCategoria]
-)
+@router.get("/estadisticas/gastos-por-categoria", response_model=list[GastosPorCategoria])
 def expenses_by_category(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,

@@ -30,9 +30,7 @@ app.add_typer(banco_app, name="banco")
 @banco_app.command("añadir")
 def add_bank(
     nombre: str = typer.Option(..., "--nombre", "-n", help="Nombre del banco/cuenta"),
-    tipo: str = typer.Option(
-        ..., "--tipo", "-t", help="Tipo: corriente, ahorro, inversión"
-    ),
+    tipo: str = typer.Option(..., "--tipo", "-t", help="Tipo: corriente, ahorro, inversión"),
     saldo: float = typer.Option(0.0, "--saldo", "-s", help="Saldo inicial"),
     moneda: str = typer.Option("EUR", "--moneda", "-m", help="Moneda"),
 ):
@@ -122,12 +120,8 @@ def add_expense_transaction(
 
 @transaccion_app.command("listar")
 def list_transactions_cli(
-    banco_id: int | None = typer.Option(
-        None, "--banco", "-b", help="Filtrar por banco"
-    ),
-    limite: int = typer.Option(
-        20, "--limite", "-l", help="Número máximo de transacciones"
-    ),
+    banco_id: int | None = typer.Option(None, "--banco", "-b", help="Filtrar por banco"),
+    limite: int = typer.Option(20, "--limite", "-l", help="Número máximo de transacciones"),
 ):
     """Lists recent transactions."""
     transacciones = db.list_transactions(banco_id=banco_id, limite=limite)
@@ -190,9 +184,7 @@ def add_subscription(
         cantidad=Decimal(str(cantidad)),
         frecuencia=freq,
     )
-    console.print(
-        f"✅ Subscription '[bold cyan]{nombre}[/]' added ({cantidad}€/{frecuencia})"
-    )
+    console.print(f"✅ Subscription '[bold cyan]{nombre}[/]' added ({cantidad}€/{frecuencia})")
 
 
 @suscripcion_app.command("listar")
@@ -226,9 +218,7 @@ def list_subscriptions_cli():
         )
 
     console.print(table)
-    console.print(
-        f"\n💸 [bold red]Total monthly subscription cost: {total_mensual:,.2f}€[/]"
-    )
+    console.print(f"\n💸 [bold red]Total monthly subscription cost: {total_mensual:,.2f}€[/]")
 
 
 @suscripcion_app.command("cancelar")
@@ -253,9 +243,7 @@ def add_net_worth_item(
     nombre: str = typer.Option(..., "--nombre", "-n", help="Nombre del activo/pasivo"),
     tipo: str = typer.Option(..., "--tipo", "-t", help="Tipo: activo o pasivo"),
     valor: float = typer.Option(..., "--valor", "-v", help="Valor"),
-    descripcion: str | None = typer.Option(
-        None, "--descripcion", "-d", help="Descripción"
-    ),
+    descripcion: str | None = typer.Option(None, "--descripcion", "-d", help="Descripción"),
 ):
     """Adds a new asset or liability."""
     db.create_net_worth_item(
@@ -265,9 +253,7 @@ def add_net_worth_item(
         descripcion=descripcion,
     )
     emoji = "📈" if tipo.lower() == "activo" else "📉"
-    console.print(
-        f"✅ {emoji} {tipo.capitalize()} '[bold]{nombre}[/]' added ({valor:,.2f}€)"
-    )
+    console.print(f"✅ {emoji} {tipo.capitalize()} '[bold]{nombre}[/]' added ({valor:,.2f}€)")
 
 
 @patrimonio_app.command("listar")
@@ -332,9 +318,7 @@ def summary():
 
     # Subscriptions
     gasto_suscripciones = db.calculate_monthly_subscription_cost()
-    console.print(
-        f"\n[bold]🔄 Monthly subscription cost:[/] [red]{gasto_suscripciones:,.2f}€[/]"
-    )
+    console.print(f"\n[bold]🔄 Monthly subscription cost:[/] [red]{gasto_suscripciones:,.2f}€[/]")
 
     # Net worth
     patrimonio_neto = db.calculate_net_worth()

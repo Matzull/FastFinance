@@ -76,7 +76,9 @@ class FinanceBotService:
             return "📭 No expenses registered."
         message = "💸 *Recent expenses:*\n\n"
         for txn in txns:
-            message += f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
+            message += (
+                f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
+            )
             message += f"  _{txn.categoria}_\n"
         return message
 
@@ -86,7 +88,9 @@ class FinanceBotService:
             return "📭 No income entries registered."
         message = "💵 *Recent income:*\n\n"
         for txn in txns:
-            message += f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
+            message += (
+                f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
+            )
             message += f"  _{txn.categoria}_\n"
         return message
 
@@ -238,11 +242,7 @@ class FinanceBotService:
         if not data or data.bank_id is None or not data.category:
             return None
         bank = self.db.get_bank(data.bank_id)
-        kind = (
-            "💸 EXPENSE"
-            if data.transaction_type == TipoTransaccion.GASTO
-            else "💵 INCOME"
-        )
+        kind = "💸 EXPENSE" if data.transaction_type == TipoTransaccion.GASTO else "💵 INCOME"
         message = f"*{kind}*\n\n"
         message += f"💰 Amount: *{data.amount:,.2f}€*\n"
         message += f"📝 Description: {data.description}\n"

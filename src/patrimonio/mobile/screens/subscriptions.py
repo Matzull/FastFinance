@@ -30,9 +30,7 @@ class SubscriptionsScreen(Screen):
         self.bank_id_input = text_field("Bank ID", numeric=True)
         self.name_input = text_field("Subscription name")
         self.amount_input = text_field("Amount")
-        self.frequency_input = text_field(
-            "Frequency (mensual/semanal/anual)", text="mensual"
-        )
+        self.frequency_input = text_field("Frequency (mensual/semanal/anual)", text="mensual")
         self.cancel_id_input = text_field("Subscription ID to cancel", numeric=True)
 
         create_btn = button("Create subscription")

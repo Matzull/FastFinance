@@ -18,9 +18,7 @@ from patrimonio.models import TipoTransaccion
 class PatrimonioWhatsAppBot:
     """Simple text-first WhatsApp flow adapter."""
 
-    def __init__(
-        self, account_sid: str, auth_token: str, openai_api_key: str | None = None
-    ):
+    def __init__(self, account_sid: str, auth_token: str, openai_api_key: str | None = None):
         self.account_sid = account_sid
         self.auth_token = auth_token
         self.service = FinanceBotService(openai_api_key=openai_api_key)
@@ -34,9 +32,7 @@ class PatrimonioWhatsAppBot:
             "Para OCR: envia 'foto' con una imagen."
         )
 
-    def process_message(
-        self, user_id: str, text: str, image_bytes: bytes | None = None
-    ) -> str:
+    def process_message(self, user_id: str, text: str, image_bytes: bytes | None = None) -> str:
         command = text.strip().lower()
 
         if command == "foto" and image_bytes is not None:
@@ -55,10 +51,7 @@ class PatrimonioWhatsAppBot:
         if command == "patrimonio":
             return self.service.get_net_worth_message()
         if command == "bancos":
-            return (
-                self.service.get_banks_message()
-                or "❌ No hay cuentas bancarias registradas."
-            )
+            return self.service.get_banks_message() or "❌ No hay cuentas bancarias registradas."
 
         if command.startswith("gasto "):
             return self._handle_manual_expense(user_id, command[6:])
@@ -160,9 +153,7 @@ class PatrimonioWhatsAppBot:
         if error:
             return error
         data = self.service.get_editable_data_dict(user_id)
-        categories = self.service.list_categories(
-            data["transaction_type"] == TipoTransaccion.GASTO
-        )
+        categories = self.service.list_categories(data["transaction_type"] == TipoTransaccion.GASTO)
         self.user_states[user_id] = {"state": WAITING_CATEGORY}
         lines = ["📂 Selecciona categoria:"]
         for index, category in enumerate(categories, start=1):
@@ -171,9 +162,7 @@ class PatrimonioWhatsAppBot:
 
     def _handle_category_selection(self, user_id: str, text: str) -> str:
         data = self.service.get_editable_data_dict(user_id)
-        categories = self.service.list_categories(
-            data["transaction_type"] == TipoTransaccion.GASTO
-        )
+        categories = self.service.list_categories(data["transaction_type"] == TipoTransaccion.GASTO)
         try:
             category = categories[int(text) - 1].value
         except Exception:

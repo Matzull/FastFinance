@@ -116,9 +116,7 @@ EXPENSE_DIRECTION_WORDS = {
 
 def _normalize_header(header: str) -> str:
     ascii_header = (
-        unicodedata.normalize("NFKD", str(header))
-        .encode("ascii", "ignore")
-        .decode("ascii")
+        unicodedata.normalize("NFKD", str(header)).encode("ascii", "ignore").decode("ascii")
     )
     return "".join(ch for ch in ascii_header.lower() if ch.isalnum())
 
@@ -236,21 +234,15 @@ class GestorDB:
             rows = list(csv.reader(io.StringIO(content), dialect=dialect))
             if not rows:
                 raise ValueError("CSV file is empty")
-            return [str(value).strip() for value in rows[0]], [
-                list(row) for row in rows[1:]
-            ]
+            return [str(value).strip() for value in rows[0]], [list(row) for row in rows[1:]]
 
         if suffix in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
-            workbook = load_workbook(
-                io.BytesIO(file_bytes), read_only=True, data_only=True
-            )
+            workbook = load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
             worksheet = workbook.active
             all_rows = [list(row) for row in worksheet.iter_rows(values_only=True)]
             if not all_rows:
                 raise ValueError("Excel file is empty")
-            headers = [
-                str(value).strip() if value is not None else "" for value in all_rows[0]
-            ]
+            headers = [str(value).strip() if value is not None else "" for value in all_rows[0]]
             return headers, all_rows[1:]
 
         raise ValueError("Unsupported file format. Allowed: .csv, .xlsx")
@@ -266,9 +258,7 @@ class GestorDB:
         if not self.get_bank(bank_id):
             raise ValueError("Bank account not found")
 
-        headers, rows = self._read_tabular_file(
-            file_name=file_name, file_bytes=file_bytes
-        )
+        headers, rows = self._read_tabular_file(file_name=file_name, file_bytes=file_bytes)
         indexes = self._resolve_column_indexes(headers)
 
         imported_count = 0
@@ -277,9 +267,7 @@ class GestorDB:
 
         for row_number, row in enumerate(rows, start=2):
             row_values = list(row)
-            if not any(
-                value is not None and str(value).strip() for value in row_values
-            ):
+            if not any(value is not None and str(value).strip() for value in row_values):
                 continue
 
             def value_for(column_key: str) -> object | None:
@@ -312,9 +300,7 @@ class GestorDB:
                 skipped_count += 1
                 continue
 
-            category_value = (
-                str(value_for("category") or "").strip().lower() or default_category
-            )
+            category_value = str(value_for("category") or "").strip().lower() or default_category
 
             try:
                 self.create_transaction(
@@ -767,12 +753,8 @@ class GestorDB:
             monthly_income.append(float(summary["ingresos"]))
 
         # Calculate averages.
-        average_expenses = (
-            sum(monthly_expenses) / len(monthly_expenses) if monthly_expenses else 0
-        )
-        average_income = (
-            sum(monthly_income) / len(monthly_income) if monthly_income else 0
-        )
+        average_expenses = sum(monthly_expenses) / len(monthly_expenses) if monthly_expenses else 0
+        average_income = sum(monthly_income) / len(monthly_income) if monthly_income else 0
 
         # Current month summary.
         current_summary = self.monthly_summary(today.month, today.year)
@@ -786,9 +768,7 @@ class GestorDB:
                 end_date = date(today.year, today.month + 1, 1)
 
             expenses_by_category = session.execute(
-                select(
-                    Transaccion.categoria, func.sum(Transaccion.cantidad).label("total")
-                )
+                select(Transaccion.categoria, func.sum(Transaccion.cantidad).label("total"))
                 .where(Transaccion.tipo == TipoTransaccion.GASTO)
                 .where(Transaccion.fecha >= start_date)
                 .where(Transaccion.fecha < end_date)
@@ -833,9 +813,7 @@ class GestorDB:
 
         # Average daily spending.
         elapsed_days = today.day
-        daily_spending = (
-            float(current_summary["gastos"]) / elapsed_days if elapsed_days > 0 else 0
-        )
+        daily_spending = float(current_summary["gastos"]) / elapsed_days if elapsed_days > 0 else 0
 
         # Monthly spending projection.
         projected_spending = daily_spending * last_day.day
@@ -981,9 +959,7 @@ GestorDB.delete_transaction = GestorDB.delete_transaction
 GestorDB.create_subscription = GestorDB.create_subscription
 GestorDB.list_subscriptions = GestorDB.list_subscriptions
 GestorDB.cancel_subscription = GestorDB.cancel_subscription
-GestorDB.calculate_monthly_subscription_expense = (
-    GestorDB.calculate_monthly_subscription_cost
-)
+GestorDB.calculate_monthly_subscription_expense = GestorDB.calculate_monthly_subscription_cost
 
 GestorDB.create_net_worth_item = GestorDB.create_net_worth_item
 GestorDB.list_net_worth_items = GestorDB.list_net_worth_items

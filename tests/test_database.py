@@ -127,9 +127,7 @@ class TestGestorDBTransacciones:
         transacciones = db_temp.list_transactions()
         assert len(transacciones) >= 5
 
-    def test_list_transactions_filtro_tipo(
-        self, db_temp, transaccion_ingreso, transaccion_gasto
-    ):
+    def test_list_transactions_filtro_tipo(self, db_temp, transaccion_ingreso, transaccion_gasto):
         """Puede filtrar transacciones por tipo."""
         ingresos = db_temp.list_transactions(tipo=TipoTransaccion.INGRESO)
         gastos = db_temp.list_transactions(tipo=TipoTransaccion.GASTO)
@@ -283,9 +281,7 @@ class TestGestorDBPatrimonio:
         items = db_temp.list_net_worth_items()
         assert len(items) >= 2
 
-    def test_list_net_worth_items_filtro_tipo(
-        self, db_temp, patrimonio_activo, patrimonio_pasivo
-    ):
+    def test_list_net_worth_items_filtro_tipo(self, db_temp, patrimonio_activo, patrimonio_pasivo):
         """Puede filtrar patrimonio por tipo."""
         activos = db_temp.list_net_worth_items(tipo="activo")
         pasivos = db_temp.list_net_worth_items(tipo="pasivo")
@@ -575,8 +571,4 @@ class TestGestorDBPresupuestos:
         insights = db_temp.get_insights()
         assert isinstance(insights, dict)
         # Debería tener claves esperadas
-        assert (
-            "promedio_gastos" in insights
-            or "tasa_ahorro" in insights
-            or len(insights) > 0
-        )
+        assert "promedio_gastos" in insights or "tasa_ahorro" in insights or len(insights) > 0

@@ -33,7 +33,9 @@ app.include_router(api_router)
 async def dashboard(request: Request):
     """Main dashboard page."""
     return templates.TemplateResponse(
-        "dashboard.html", {"request": request, "active_page": "dashboard"}
+        request,
+        "dashboard.html",
+        {"active_page": "dashboard"},
     )
 
 
@@ -41,7 +43,9 @@ async def dashboard(request: Request):
 async def banks_page(request: Request):
     """Bank management page."""
     return templates.TemplateResponse(
-        "bancos.html", {"request": request, "active_page": "bancos"}
+        request,
+        "bancos.html",
+        {"active_page": "bancos"},
     )
 
 
@@ -49,7 +53,9 @@ async def banks_page(request: Request):
 async def transactions_page(request: Request):
     """Transaction management page."""
     return templates.TemplateResponse(
-        "transacciones.html", {"request": request, "active_page": "transacciones"}
+        request,
+        "transacciones.html",
+        {"active_page": "transacciones"},
     )
 
 
@@ -57,7 +63,9 @@ async def transactions_page(request: Request):
 async def subscriptions_page(request: Request):
     """Subscription management page."""
     return templates.TemplateResponse(
-        "suscripciones.html", {"request": request, "active_page": "suscripciones"}
+        request,
+        "suscripciones.html",
+        {"active_page": "suscripciones"},
     )
 
 
@@ -65,7 +73,9 @@ async def subscriptions_page(request: Request):
 async def net_worth_page(request: Request):
     """Net worth management page."""
     return templates.TemplateResponse(
-        "patrimonio.html", {"request": request, "active_page": "patrimonio"}
+        request,
+        "patrimonio.html",
+        {"active_page": "patrimonio"},
     )
 
 
@@ -73,7 +83,9 @@ async def net_worth_page(request: Request):
 async def budgets_page(request: Request):
     """Budget management page."""
     return templates.TemplateResponse(
-        "presupuestos.html", {"request": request, "active_page": "presupuestos"}
+        request,
+        "presupuestos.html",
+        {"active_page": "presupuestos"},
     )
 
 
@@ -81,7 +93,9 @@ async def budgets_page(request: Request):
 async def insights_page(request: Request):
     """Financial insights page."""
     return templates.TemplateResponse(
-        "insights.html", {"request": request, "active_page": "insights"}
+        request,
+        "insights.html",
+        {"active_page": "insights"},
     )
 
 

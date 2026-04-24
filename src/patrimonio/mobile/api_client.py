@@ -54,9 +54,7 @@ class FastFinanceApiClient:
     def cancel_subscription(self, subscription_id: int) -> dict[str, Any]:
         return self._request_json("DELETE", f"/api/suscripciones/{subscription_id}")
 
-    def list_net_worth_items(
-        self, item_type: str | None = None
-    ) -> list[dict[str, Any]]:
+    def list_net_worth_items(self, item_type: str | None = None) -> list[dict[str, Any]]:
         if item_type:
             return self._request_json("GET", f"/api/patrimonio?tipo={item_type}")
         return self._request_json("GET", "/api/patrimonio")
@@ -90,9 +88,7 @@ class FastFinanceApiClient:
         return self._request_json("GET", "/api/estadisticas/gastos-por-categoria")
 
     def monthly_evolution(self, months: int = 12) -> list[dict[str, Any]]:
-        return self._request_json(
-            "GET", f"/api/estadisticas/evolucion-mensual?meses={months}"
-        )
+        return self._request_json("GET", f"/api/estadisticas/evolucion-mensual?meses={months}")
 
     def _request_json(
         self,

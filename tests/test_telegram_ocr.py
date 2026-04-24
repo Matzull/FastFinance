@@ -46,10 +46,10 @@ class TestReceiptExtractor:
         text = """
         SUPERMERCADO ABC
         Fecha: 15/01/2024
-        
+
         Leche 1L         2.50
         Pan              1.20
-        
+
         TOTAL: 3.70
         """
         data = extractor._parse_receipt_text(text)
@@ -60,9 +60,9 @@ class TestReceiptExtractor:
         extractor = ReceiptExtractor()
         text = """
         TIENDA XYZ
-        
+
         Artículo A    10.00€
-        
+
         A PAGAR: 10.00
         """
         data = extractor._parse_receipt_text(text)

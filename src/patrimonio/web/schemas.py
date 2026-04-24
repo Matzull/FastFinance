@@ -9,6 +9,7 @@ from patrimonio.models import Frecuencia, PeriodoPresupuesto, TipoTransaccion
 
 # ==================== BANCO ====================
 
+
 class BancoBase(BaseModel):
     nombre: str
     tipo_cuenta: str
@@ -38,6 +39,7 @@ class BancoResponse(BancoBase):
 
 # ==================== TRANSACCION ====================
 
+
 class TransaccionBase(BaseModel):
     banco_id: int
     tipo: TipoTransaccion
@@ -60,6 +62,7 @@ class TransaccionResponse(TransaccionBase):
 
 
 # ==================== SUSCRIPCION ====================
+
 
 class SuscripcionBase(BaseModel):
     banco_id: int
@@ -94,6 +97,7 @@ class SuscripcionResponse(SuscripcionBase):
 
 # ==================== PATRIMONIO ====================
 
+
 class PatrimonioBase(BaseModel):
     nombre: str
     tipo: str  # activo o pasivo
@@ -119,6 +123,7 @@ class PatrimonioResponse(PatrimonioBase):
 
 
 # ==================== RESUMEN ====================
+
 
 class ResumenMensual(BaseModel):
     mes: int
@@ -151,6 +156,7 @@ class EvolucionMensual(BaseModel):
 
 
 # ==================== PRESUPUESTOS ====================
+
 
 class PresupuestoBase(BaseModel):
     nombre: str
@@ -195,6 +201,7 @@ class EstadoPresupuesto(BaseModel):
 
 
 # ==================== INSIGHTS ====================
+
 
 class AlertaInsight(BaseModel):
     tipo: str  # success, warning, danger

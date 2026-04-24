@@ -1,5 +1,7 @@
 """OCR utilities to extract structured data from receipts."""
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from datetime import date
@@ -50,9 +52,9 @@ class ReceiptExtractor:
 
     def __init__(self, openai_api_key: str | None = None):
         self.openai_api_key = openai_api_key
-        self.openai_client = None
+        self.openai_client: OpenAI | None = None
         self.paddleocr = None
-        self.paddleocr_error = None
+        self.paddleocr_error: str | None = None
         self.paddleocr_initialized = False
 
         if openai_api_key and OPENAI_AVAILABLE:
@@ -126,9 +128,7 @@ Return only JSON without extra explanation.""",
                             },
                             {
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{media_type};base64,{img_base64}"
-                                },
+                                "image_url": {"url": f"data:{media_type};base64,{img_base64}"},
                             },
                         ],
                     }
@@ -137,7 +137,14 @@ Return only JSON without extra explanation.""",
             )
 
             # Parsear respuesta JSON
-            answer = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if not content:
+                return ReceiptData(
+                    description="OpenAI returned empty content",
+                    confidence=0.0,
+                )
+
+            answer = content.strip()
             if answer.startswith("```"):
                 answer = re.sub(r"^```(?:json)?\n?", "", answer)
                 answer = re.sub(r"\n?```$", "", answer)
@@ -146,11 +153,11 @@ Return only JSON without extra explanation.""",
 
             data = json.loads(answer)
 
-            total = None
+            total: Decimal | None = None
             if data.get("total") is not None:
                 total = Decimal(str(data["total"]))
 
-            parsed_date = None
+            parsed_date: date | None = None
             if data.get("date"):
                 try:
                     parsed_date = date.fromisoformat(data["date"])

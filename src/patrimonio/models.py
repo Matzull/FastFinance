@@ -15,6 +15,7 @@ class Base(DeclarativeBase):
 
 class TipoTransaccion(str, Enum):
     """Transaction type values stored in the database."""
+
     INGRESO = "ingreso"
     GASTO = "gasto"
     TRANSFERENCIA = "transferencia"
@@ -22,6 +23,7 @@ class TipoTransaccion(str, Enum):
 
 class Frecuencia(str, Enum):
     """Subscription frequency values stored in the database."""
+
     DIARIA = "diaria"
     SEMANAL = "semanal"
     MENSUAL = "mensual"
@@ -30,6 +32,7 @@ class Frecuencia(str, Enum):
 
 class CategoriaGasto(str, Enum):
     """Expense category values."""
+
     ALIMENTACION = "alimentacion"
     TRANSPORTE = "transporte"
     VIVIENDA = "vivienda"
@@ -45,6 +48,7 @@ class CategoriaGasto(str, Enum):
 
 class CategoriaIngreso(str, Enum):
     """Income category values."""
+
     SALARIO = "salario"
     FREELANCE = "freelance"
     INVERSIONES = "inversiones"
@@ -56,6 +60,7 @@ class CategoriaIngreso(str, Enum):
 
 class Banco(Base):
     """Represents a bank account or financial institution."""
+
     __tablename__ = "bancos"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -81,6 +86,7 @@ class Banco(Base):
 
 class Transaccion(Base):
     """Represents a transaction (income or expense)."""
+
     __tablename__ = "transacciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -105,6 +111,7 @@ class Transaccion(Base):
 
 class Suscripcion(Base):
     """Represents a recurring subscription."""
+
     __tablename__ = "suscripciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -142,6 +149,7 @@ class Suscripcion(Base):
 
 class Patrimonio(Base):
     """Represents an asset or liability item."""
+
     __tablename__ = "patrimonio"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -158,6 +166,7 @@ class Patrimonio(Base):
 
 class PeriodoPresupuesto(str, Enum):
     """Budget period values stored in the database."""
+
     SEMANAL = "semanal"
     MENSUAL = "mensual"
     ANUAL = "anual"
@@ -165,6 +174,7 @@ class PeriodoPresupuesto(str, Enum):
 
 class Presupuesto(Base):
     """Represents a budget for an expense category."""
+
     __tablename__ = "presupuestos"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -172,8 +182,7 @@ class Presupuesto(Base):
     categoria: Mapped[str] = mapped_column(String(50))
     limite: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     periodo: Mapped[PeriodoPresupuesto] = mapped_column(
-        SQLEnum(PeriodoPresupuesto),
-        default=PeriodoPresupuesto.MENSUAL
+        SQLEnum(PeriodoPresupuesto), default=PeriodoPresupuesto.MENSUAL
     )
     activo: Mapped[bool] = mapped_column(default=True)
     color: Mapped[str] = mapped_column(String(7), default="#8B5CF6")
