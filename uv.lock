@@ -62,6 +62,27 @@ wheels = [
 ]
 
 [[package]]
+name = "asyncgui"
+version = "0.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/44/e697dc6f6e2e564c34135f743bf701ae223ac52885646f5a1bd66dcd8b0a/asyncgui-0.6.3.tar.gz", hash = "sha256:05de49c2221128d3530f010df98491f3553183ec8909d205a0c0250bee5d6e0c", size = 9177, upload-time = "2024-06-27T11:45:18.33Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/1c/00470dc25b1e63506fb3087389207571fdb094ce76861f9ce29e6832b57f/asyncgui-0.6.3-py3-none-any.whl", hash = "sha256:46723e65d8bf023e28d141f6a9d38634ef5b97a5236fafdaf80b47e13275a5eb", size = 9145, upload-time = "2024-06-27T11:45:16.18Z" },
+]
+
+[[package]]
+name = "asynckivy"
+version = "0.6.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asyncgui" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/d8/7412fbb4584bf8389aa387a085ab02b49b4885387ac26187b30552f8c88a/asynckivy-0.6.4.tar.gz", hash = "sha256:58c34876a2422464f39df120b659c8b22e044852dd7ff94c5b9cb9dad84e902b", size = 15576, upload-time = "2024-08-20T10:45:29.158Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/f3/11ed2f527e0fde70d2c693ff64e6893285d3ae4b08666e808929d6234579/asynckivy-0.6.4-py3-none-any.whl", hash = "sha256:4e26bb6dbc9768d5ca593bae7b36927c06e43915c44b02ddcaa64dc223a2d5e2", size = 18646, upload-time = "2024-08-20T10:45:27.444Z" },
+]
+
+[[package]]
 name = "bce-python-sdk"
 version = "0.9.68"
 source = { registry = "https://pypi.org/simple" }
@@ -364,7 +385,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "kivy", marker = "extra == 'mobile'", specifier = ">=2.3.0" },
-    { name = "kivymd", marker = "extra == 'mobile'", specifier = ">=1.2.0" },
+    { name = "kivymd", marker = "extra == 'mobile'", url = "https://github.com/kivymd/KivyMD/archive/master.zip" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "paddleocr", specifier = ">=3.2.0" },
@@ -727,13 +748,43 @@ wheels = [
 
 [[package]]
 name = "kivymd"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.0.1.dev0"
+source = { url = "https://github.com/kivymd/KivyMD/archive/master.zip" }
 dependencies = [
+    { name = "asynckivy" },
     { name = "kivy" },
+    { name = "materialshapes" },
+    { name = "materialyoucolor" },
     { name = "pillow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/81/0b1154f5e581d5910702d9fadb3217f56cb186f72c8b36de0271e7ff9b5c/kivymd-1.2.0.tar.gz", hash = "sha256:2d33e2c59259998e93aee55acde647a4a20e5a0f962469db24ee4c9ec586962e", size = 2160842, upload-time = "2024-01-21T10:49:26.401Z" }
+sdist = { hash = "sha256:c09db9f44a04e241b56c7cef8c961bb00ee036c5ae92d57df65f89592af5843f" }
+
+[package.metadata]
+requires-dist = [
+    { name = "astroid", marker = "extra == 'docs'", specifier = "<2.12" },
+    { name = "asynckivy", specifier = ">=0.6,<0.7" },
+    { name = "black", marker = "extra == 'dev'" },
+    { name = "coveralls", marker = "extra == 'dev'" },
+    { name = "flake8", marker = "extra == 'dev'" },
+    { name = "isort", extras = ["pyproject"], marker = "extra == 'dev'" },
+    { name = "kivy", specifier = ">=2.3.0" },
+    { name = "materialshapes", specifier = ">=0.3" },
+    { name = "materialyoucolor", specifier = ">=2.0.7" },
+    { name = "pillow" },
+    { name = "pre-commit", marker = "extra == 'dev'" },
+    { name = "pyinstaller", extras = ["hook-testing"], marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "pytest-timeout", marker = "extra == 'dev'" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = "==7.3.7" },
+    { name = "sphinx-autoapi", marker = "extra == 'docs'", specifier = "==3.0.0" },
+    { name = "sphinx-book-theme", marker = "extra == 'docs'" },
+    { name = "sphinx-copybutton", marker = "extra == 'docs'" },
+    { name = "sphinx-notfound-page", marker = "extra == 'docs'" },
+    { name = "sphinx-tabs", marker = "extra == 'docs'" },
+]
+provides-extras = ["dev", "docs"]
 
 [[package]]
 name = "markdown-it-py"
@@ -808,6 +859,55 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fb/df/5bd7a48c256faecd1d36edc13133e51397e41b73bb77e1a69deab746ebac/markupsafe-3.0.3-cp314-cp314t-win32.whl", hash = "sha256:915c04ba3851909ce68ccc2b8e2cd691618c4dc4c4232fb7982bca3f41fd8c3d", size = 14819, upload-time = "2025-09-27T18:37:26.285Z" },
     { url = "https://files.pythonhosted.org/packages/1a/8a/0402ba61a2f16038b48b39bccca271134be00c5c9f0f623208399333c448/markupsafe-3.0.3-cp314-cp314t-win_amd64.whl", hash = "sha256:4faffd047e07c38848ce017e8725090413cd80cbc23d86e55c587bf979e579c9", size = 15426, upload-time = "2025-09-27T18:37:27.316Z" },
     { url = "https://files.pythonhosted.org/packages/70/bc/6f1c2f612465f5fa89b95bead1f44dcb607670fd42891d8fdcd5d039f4f4/markupsafe-3.0.3-cp314-cp314t-win_arm64.whl", hash = "sha256:32001d6a8fc98c8cb5c947787c5d08b0a50663d139f1305bac5885d98d9b40fa", size = 14146, upload-time = "2025-09-27T18:37:28.327Z" },
+]
+
+[[package]]
+name = "materialshapes"
+version = "0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "kivy" },
+    { name = "pillow" },
+    { name = "pycairo" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/70/8fe83033136092da1babf46222964980de564bb0893fce73ed8e42b71e49/materialshapes-0.3.tar.gz", hash = "sha256:141d4ceaaf4122379eb8147805d9a87e8e11bde90b03529cbae1a1689dfe6868", size = 25433, upload-time = "2025-07-14T18:53:24.176Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/73/16/19287efc5878ec8658269bb23d456f62774bbd57ffa4cb4602b34dd1e602/materialshapes-0.3-py3-none-any.whl", hash = "sha256:2aa1ef131bc67bbd1f6a1e03efd0419cf148fd204bff69a5b41bbce09fe0e2f4", size = 29131, upload-time = "2025-07-14T18:53:22.22Z" },
+]
+
+[[package]]
+name = "materialyoucolor"
+version = "3.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/47/2db3504a71e6e7bdad8e4dfdcf4b62a575cb4229c32a3a612062b39cf6cc/materialyoucolor-3.0.2.tar.gz", hash = "sha256:e2c892ae23dc0732c32307682002884616a282de5a350088aacc23cdf885e822", size = 127051, upload-time = "2026-02-22T07:19:30.297Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/71/ec9df620ed29a8a7176955788d699b954356a41983eef82f3110fe5d0629/materialyoucolor-3.0.2-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:be9def0be02a9e96fddb8ce601158970da4f27da2761acb4c16ee1f05a7394ce", size = 214304, upload-time = "2026-02-22T07:09:25.197Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/4b/59dfbbc44cec67e7da62555c8e3434f515ffc80dfa82860a8a21ce2289b5/materialyoucolor-3.0.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:e4d69e3ecfe7e1fd5dd0886ae33ae2ef46ac819affc50540a33416816f432ac1", size = 203509, upload-time = "2026-02-22T07:09:26.73Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/b3/b82b40d5d300ce15db4c6fe2a8b3c768f588cc5384d3b1e391a651af93d4/materialyoucolor-3.0.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9f675b95c106db547e9eaf59a08eb01689b8df6dc7bdd21ef58837cb0f20242c", size = 233489, upload-time = "2026-02-22T07:09:28.19Z" },
+    { url = "https://files.pythonhosted.org/packages/be/b7/bb69d6519d42f2e3bbf14315e594cefca5cf68e86160e0bdec18dd82c1f5/materialyoucolor-3.0.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d6692115e570c383202f58c6e3fb55c34840cb37aa2cae7f9a76eb4baec47534", size = 1265493, upload-time = "2026-02-22T07:09:29.7Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/cb/1a57eabd1bc0811dbf89e2db060cdcbe31156a884c0873e65395d7b75cdb/materialyoucolor-3.0.2-cp312-cp312-win32.whl", hash = "sha256:e9a24f185f83100149de9ca3c799c9d0ace96389dfa4404899ae7d66f7f7c3ea", size = 161261, upload-time = "2026-02-22T07:09:31.243Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/96/36700714b69754b19ffa669d11285ff1df9c3cff4896b7a83f0b2d2f81ea/materialyoucolor-3.0.2-cp312-cp312-win_amd64.whl", hash = "sha256:4013952e770c2c8f5bfc5b96a3db31bf0f964cbf9a02ff476eed1f0f4a1c8235", size = 177179, upload-time = "2026-02-22T07:09:32.806Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/94/da86904173a5af7c6af33cefb47365f68e2769f740442d5aaa676fce52ed/materialyoucolor-3.0.2-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:311c1484832c00b8be7ef7781e3fc9e6f17b311f899f6657f4523a1ae067d168", size = 214334, upload-time = "2026-02-22T07:09:34.328Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/42/a12606b88d0d991276bfcd8084e66e06c302d3713db3f8929a0be99e9244/materialyoucolor-3.0.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:fe03cf51df6e21acf1986810052cf35fed3fbc759c1ab0d7c5a9730ee2890029", size = 203527, upload-time = "2026-02-22T07:09:35.587Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/58/a030f46147f3847c7cd3dcda2bc2c362f7275b771ff61e622c547c29f63a/materialyoucolor-3.0.2-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c4d302e0b309d9b45548074c8a348903733df8bc4101283dc969f0ff157afde5", size = 233604, upload-time = "2026-02-22T07:09:37.061Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/e6/8d83bd8366300a79b7d529ad65cb523f904481a45c9a7720705174f81352/materialyoucolor-3.0.2-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:92c56bf78cd7008a925b9a928c2784e30266b3c6a56e5a481f627d51c82ed2f8", size = 1265500, upload-time = "2026-02-22T07:09:38.549Z" },
+    { url = "https://files.pythonhosted.org/packages/07/cc/5b3252893277c03ee231d147ce877e5a348b60c628b185433f9e75c40b9d/materialyoucolor-3.0.2-cp313-cp313-win32.whl", hash = "sha256:8fa0ae5ea849b0d120e998b157605aa098b1388a035ecd019c8424fd14fc23b9", size = 161307, upload-time = "2026-02-22T07:09:39.874Z" },
+    { url = "https://files.pythonhosted.org/packages/55/02/f7c7a953b33f64979b97c02bccb0b23226a433d55e5696193e27cdb923c7/materialyoucolor-3.0.2-cp313-cp313-win_amd64.whl", hash = "sha256:32048938b7735fdb8496fcc6561a5a0c04f74160f8f41674f08304b0942740e7", size = 177237, upload-time = "2026-02-22T07:09:41.437Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/69/00a69bc4359add916dcd7fc3e18af088105532bb702f1adbfca1ed901f80/materialyoucolor-3.0.2-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:d913024cf54f7ff76c8651205994421798016ee99dc4a267c6ef85bca5af0bf3", size = 214611, upload-time = "2026-02-22T07:09:42.884Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/bf/7dfccba92d8aeb4bee7d29c6e3a39be49c654e56eb20b0e7608aebd6aa38/materialyoucolor-3.0.2-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:b2d52554ca52758a318016a52da4f9f7d8024280eb303ec9df8033261ea6099b", size = 203678, upload-time = "2026-02-22T07:09:44.144Z" },
+    { url = "https://files.pythonhosted.org/packages/20/84/27f5ab8a9b5824b238939b9d11361f78ce1d03511e3137df030938933020/materialyoucolor-3.0.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:91a02dce74057262c6890ca308b33f04c95fbb7831c1e439e2c94662e7bcb88b", size = 233743, upload-time = "2026-02-22T07:09:45.393Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/00/0ae789137ab411880a808c462e3d0512da7b7ff77b46174a6e5df99fe5d2/materialyoucolor-3.0.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:0ffb0dd15f7c3d9821bd94f04e376135c56854734c0008e238fa78a58f67278c", size = 1265560, upload-time = "2026-02-22T07:09:46.585Z" },
+    { url = "https://files.pythonhosted.org/packages/33/a5/d819932a25edfa1b7332a9dbb507c7da2274039682b89d2eb6b5b8cc1d4c/materialyoucolor-3.0.2-cp314-cp314-win32.whl", hash = "sha256:420c537a9829c92b0baa47d15dd375e9fc6a7fecfc203204d1cbcc31654d26f2", size = 163905, upload-time = "2026-02-22T07:09:48.312Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/31/da2731a3c963df8041785c1901f961f1466fd6db4adb51899b120281da59/materialyoucolor-3.0.2-cp314-cp314-win_amd64.whl", hash = "sha256:bdc919d66abccffc01293a29065ad05c0b04ac745a45fe386879e80f92222640", size = 180648, upload-time = "2026-02-22T07:09:49.397Z" },
+    { url = "https://files.pythonhosted.org/packages/85/a6/05ffd5b338a67f5ae9c33eed09bb51d03df4694b25ff65e17bb8514ccd38/materialyoucolor-3.0.2-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:f14660be800f7d7844400dabc1fa0a777a3b7c9fbe62f353db31bfab85e60945", size = 217682, upload-time = "2026-02-22T07:09:50.582Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/92/fcaed76a04445c71339165f159524b0f52f763aff46a3ae94bdd88636f90/materialyoucolor-3.0.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:4a922b46d14311688487c493ec8135f6bc3d59c03c38130b0b8e757671aa93a5", size = 207402, upload-time = "2026-02-22T07:09:51.822Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/de/741a3682b82a0beb9254e030f780644b980c88e65c50212ca43e19b858bf/materialyoucolor-3.0.2-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:250a07f4847e6d5ab54554a0bf310c00ae8ae492244127a84d8101719b6994f5", size = 233884, upload-time = "2026-02-22T07:09:53.029Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/46/138de4eecaf29bc42d56c6427b62632cfa5396d8446e57a3c14d21109246/materialyoucolor-3.0.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:f80ed46bd57f6217b66a37f10a57ff2c2d405ca8842ed4a64cfe4d6d5c554947", size = 1265954, upload-time = "2026-02-22T07:09:54.506Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/69/ab0c433163bdec5bc5a08ab7c022dd06fcd978cd52519024046e1eb65d41/materialyoucolor-3.0.2-cp314-cp314t-win32.whl", hash = "sha256:9995eb30c16388c2069213f7446a6840e365420f20f1dd0ecb9d5e9ce746056d", size = 168361, upload-time = "2026-02-22T07:09:55.72Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/67/c58c72b176c30585ae2e1055580fa5c7229b25bf88ad0205b5a5e070435e/materialyoucolor-3.0.2-cp314-cp314t-win_amd64.whl", hash = "sha256:0a31030706af9b1f3d3916ce26b44e1b6a822cfd78a50083ea2451497d24863d", size = 186157, upload-time = "2026-02-22T07:09:57.145Z" },
 ]
 
 [[package]]
@@ -1194,6 +1294,25 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/37/a8/d832f7293ebb21690860d2e01d8115e5ff6f2ae8bbdc953f0eb0fa4bd2c7/py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690", size = 104716, upload-time = "2022-10-25T20:38:06.303Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/a9/023730ba63db1e494a271cb018dcd361bd2c917ba7004c3e49d5daf795a2/py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5", size = 22335, upload-time = "2022-10-25T20:38:27.636Z" },
+]
+
+[[package]]
+name = "pycairo"
+version = "1.29.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/d9/1728840a22a4ef8a8f479b9156aa2943cd98c3907accd3849fb0d5f82bfd/pycairo-1.29.0.tar.gz", hash = "sha256:f3f7fde97325cae80224c09f12564ef58d0d0f655da0e3b040f5807bd5bd3142", size = 665871, upload-time = "2025-11-11T19:13:01.584Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/28/6363087b9e60af031398a6ee5c248639eefc6cc742884fa2789411b1f73b/pycairo-1.29.0-cp312-cp312-win32.whl", hash = "sha256:91bcd7b5835764c616a615d9948a9afea29237b34d2ed013526807c3d79bb1d0", size = 751486, upload-time = "2025-11-11T19:11:54.451Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/d2/d146f1dd4ef81007686ac52231dd8f15ad54cf0aa432adaefc825475f286/pycairo-1.29.0-cp312-cp312-win_amd64.whl", hash = "sha256:3f01c3b5e49ef9411fff6bc7db1e765f542dc1c9cfed4542958a5afa3a8b8e76", size = 845383, upload-time = "2025-11-11T19:12:01.551Z" },
+    { url = "https://files.pythonhosted.org/packages/01/16/6e6f33bb79ec4a527c9e633915c16dc55a60be26b31118dbd0d5859e8c51/pycairo-1.29.0-cp312-cp312-win_arm64.whl", hash = "sha256:eafe3d2076f3533535ad4a361fa0754e0ee66b90e548a3a0f558fed00b1248f2", size = 694518, upload-time = "2025-11-11T19:12:06.561Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/21/3f477dc318dd4e84a5ae6301e67284199d7e5a2384f3063714041086b65d/pycairo-1.29.0-cp313-cp313-win32.whl", hash = "sha256:3eb382a4141591807073274522f7aecab9e8fa2f14feafd11ac03a13a58141d7", size = 750949, upload-time = "2025-11-11T19:12:12.198Z" },
+    { url = "https://files.pythonhosted.org/packages/43/34/7d27a333c558d6ac16dbc12a35061d389735e99e494ee4effa4ec6d99bed/pycairo-1.29.0-cp313-cp313-win_amd64.whl", hash = "sha256:91114e4b3fbf4287c2b0788f83e1f566ce031bda49cf1c3c3c19c3e986e95c38", size = 844149, upload-time = "2025-11-11T19:12:19.171Z" },
+    { url = "https://files.pythonhosted.org/packages/15/43/e782131e23df69e5c8e631a016ed84f94bbc4981bf6411079f57af730a23/pycairo-1.29.0-cp313-cp313-win_arm64.whl", hash = "sha256:09b7f69a5ff6881e151354ea092137b97b0b1f0b2ab4eb81c92a02cc4a08e335", size = 693595, upload-time = "2025-11-11T19:12:23.445Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/fa/87eaeeb9d53344c769839d7b2854db7ff2cd596211e00dd1b702eeb1838f/pycairo-1.29.0-cp314-cp314-win32.whl", hash = "sha256:69e2a7968a3fbb839736257bae153f547bca787113cc8d21e9e08ca4526e0b6b", size = 767198, upload-time = "2025-11-11T19:12:42.336Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/90/3564d0f64d0a00926ab863dc3c4a129b1065133128e96900772e1c4421f8/pycairo-1.29.0-cp314-cp314-win_amd64.whl", hash = "sha256:e91243437a21cc4c67c401eff4433eadc45745275fa3ade1a0d877e50ffb90da", size = 871579, upload-time = "2025-11-11T19:12:48.982Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/91/93632b6ba12ad69c61991e3208bde88486fdfc152be8cfdd13444e9bc650/pycairo-1.29.0-cp314-cp314-win_arm64.whl", hash = "sha256:b72200ea0e5f73ae4c788cd2028a750062221385eb0e6d8f1ecc714d0b4fdf82", size = 719537, upload-time = "2025-11-11T19:12:55.016Z" },
+    { url = "https://files.pythonhosted.org/packages/93/23/37053c039f8d3b9b5017af9bc64d27b680c48a898d48b72e6d6583cf0155/pycairo-1.29.0-cp314-cp314t-win_amd64.whl", hash = "sha256:5e45fce6185f553e79e4ef1722b8e98e6cde9900dbc48cb2637a9ccba86f627a", size = 874015, upload-time = "2025-11-11T19:12:28.47Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/54/123f6239685f5f3f2edc123f1e38d2eefacebee18cf3c532d2f4bd51d0ef/pycairo-1.29.0-cp314-cp314t-win_arm64.whl", hash = "sha256:caba0837a4b40d47c8dfb0f24cccc12c7831e3dd450837f2a356c75f21ce5a15", size = 721404, upload-time = "2025-11-11T19:12:36.919Z" },
 ]
 
 [[package]]
