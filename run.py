@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """Script to run all FastFinance services."""
 
+import os
 import pty
+import subprocess
+import threading
+import time
+from pathlib import Path
 
 import dotenv
-import subprocess
-import os
-import time
-import threading
-from pathlib import Path
 
 
 def print_banner():

@@ -2,37 +2,38 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, File, Form, UploadFile
-from sqlalchemy import select, func
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from sqlalchemy import func, select
 
 from patrimonio.database import GestorDB
 from patrimonio.models import (
+    Banco,
     TipoTransaccion,
     Transaccion,
+)
+from patrimonio.models import (
     Patrimonio as PatrimonioModel,
-    Banco,
 )
 from patrimonio.web.schemas import (
     BancoCreate,
     BancoResponse,
-    TransaccionCreate,
-    TransaccionResponse,
-    SuscripcionCreate,
-    SuscripcionResponse,
+    EstadoPresupuesto,
+    EvolucionMensual,
+    GastosPorCategoria,
+    InsightsResponse,
     PatrimonioCreate,
     PatrimonioResponse,
+    PresupuestoCreate,
+    PresupuestoResponse,
+    PresupuestoUpdate,
     ResumenGeneral,
     ResumenMensual,
-    GastosPorCategoria,
-    EvolucionMensual,
-    PresupuestoCreate,
-    PresupuestoUpdate,
-    PresupuestoResponse,
-    EstadoPresupuesto,
-    InsightsResponse,
     StatementImportResponse,
+    SuscripcionCreate,
+    SuscripcionResponse,
+    TransaccionCreate,
+    TransaccionResponse,
 )
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -122,11 +123,11 @@ def delete_bank(banco_id: int):
 
 @router.get("/transacciones", response_model=list[TransaccionResponse])
 def list_transactions(
-    banco_id: Optional[int] = None,
-    tipo: Optional[TipoTransaccion] = None,
-    categoria: Optional[str] = None,
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
+    banco_id: int | None = None,
+    tipo: TipoTransaccion | None = None,
+    categoria: str | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
     limite: int = Query(50, le=500),
 ):
     """Lists transactions with optional filters."""
@@ -296,7 +297,7 @@ def cancel_subscription(suscripcion_id: int):
 
 
 @router.get("/patrimonio", response_model=list[PatrimonioResponse])
-def list_net_worth_items(tipo: Optional[str] = None):
+def list_net_worth_items(tipo: str | None = None):
     """Lists all assets and liabilities."""
     items = db.list_net_worth_items(tipo=tipo)
     return [
@@ -387,8 +388,8 @@ def get_summary():
     "/estadisticas/gastos-por-categoria", response_model=list[GastosPorCategoria]
 )
 def expenses_by_category(
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
 ):
     """Obtiene los gastos agrupados por categoría."""
     with db.get_session() as session:

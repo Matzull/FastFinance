@@ -5,12 +5,12 @@ from decimal import Decimal
 import pytest
 
 from patrimonio.telegram.bot import (
-    PatrimonioBot,
     WAITING_BANK,
     WAITING_CATEGORY,
-    WAITING_DESCRIPTION,
     WAITING_CONFIRMATION,
+    WAITING_DESCRIPTION,
     WAITING_MANUAL_AMOUNT,
+    PatrimonioBot,
 )
 
 

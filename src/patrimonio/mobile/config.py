@@ -7,7 +7,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 
 

@@ -2,7 +2,6 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -11,10 +10,10 @@ from rich.table import Table
 
 from patrimonio.database import GestorDB
 from patrimonio.models import (
-    TipoTransaccion,
-    Frecuencia,
     CategoriaGasto,
     CategoriaIngreso,
+    Frecuencia,
+    TipoTransaccion,
 )
 
 app = typer.Typer(help="💰 Personal Finance Manager")
@@ -123,7 +122,7 @@ def add_expense_transaction(
 
 @transaccion_app.command("listar")
 def list_transactions_cli(
-    banco_id: Optional[int] = typer.Option(
+    banco_id: int | None = typer.Option(
         None, "--banco", "-b", help="Filtrar por banco"
     ),
     limite: int = typer.Option(
@@ -254,7 +253,7 @@ def add_net_worth_item(
     nombre: str = typer.Option(..., "--nombre", "-n", help="Nombre del activo/pasivo"),
     tipo: str = typer.Option(..., "--tipo", "-t", help="Tipo: activo o pasivo"),
     valor: float = typer.Option(..., "--valor", "-v", help="Valor"),
-    descripcion: Optional[str] = typer.Option(
+    descripcion: str | None = typer.Option(
         None, "--descripcion", "-d", help="Descripción"
     ),
 ):

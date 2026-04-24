@@ -47,3 +47,5 @@ Thumbs.db
 .buildozer/
 .tmp/
 *.apk
+
+act

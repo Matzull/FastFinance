@@ -1,9 +1,9 @@
 """Tests para la API REST."""
 
-from io import BytesIO
 import tempfile
-from pathlib import Path
 from decimal import Decimal
+from io import BytesIO
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -651,8 +651,9 @@ class TestAPIInsights:
     def test_insights_con_transacciones(self, client):
         """Los insights incluyen datos con transacciones."""
         client, db = client
-        from patrimonio.models import TipoTransaccion
         from datetime import date
+
+        from patrimonio.models import TipoTransaccion
 
         # Crear banco y transacciones
         banco = db.create_bank(nombre="Test", tipo_cuenta="corriente")

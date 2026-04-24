@@ -3,9 +3,9 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
-from sqlalchemy import ForeignKey, String, Numeric, Date, DateTime, Enum as SQLEnum
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -63,7 +63,7 @@ class Banco(Base):
     tipo_cuenta: Mapped[str] = mapped_column(String(50))
     saldo_inicial: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     moneda: Mapped[str] = mapped_column(String(3), default="EUR")
-    notas: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    notas: Mapped[str | None] = mapped_column(String(500), nullable=True)
     activo: Mapped[bool] = mapped_column(default=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
@@ -89,7 +89,7 @@ class Transaccion(Base):
     descripcion: Mapped[str] = mapped_column(String(200))
     categoria: Mapped[str] = mapped_column(String(50))
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
-    notas: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    notas: Mapped[str | None] = mapped_column(String(500), nullable=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     # Foreign keys
@@ -112,10 +112,10 @@ class Suscripcion(Base):
     cantidad: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     frecuencia: Mapped[Frecuencia] = mapped_column(SQLEnum(Frecuencia))
     fecha_inicio: Mapped[date] = mapped_column(Date)
-    fecha_fin: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    fecha_fin: Mapped[date | None] = mapped_column(Date, nullable=True)
     categoria: Mapped[str] = mapped_column(String(50), default=CategoriaGasto.SUSCRIPCIONES.value)
     activa: Mapped[bool] = mapped_column(default=True)
-    notas: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    notas: Mapped[str | None] = mapped_column(String(500), nullable=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     # Foreign keys
@@ -148,8 +148,8 @@ class Patrimonio(Base):
     nombre: Mapped[str] = mapped_column(String(100))
     tipo: Mapped[str] = mapped_column(String(50))
     valor: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    descripcion: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    fecha_adquisicion: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    descripcion: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    fecha_adquisicion: Mapped[date | None] = mapped_column(Date, nullable=True)
     fecha_actualizacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     def __repr__(self) -> str:
@@ -172,13 +172,13 @@ class Presupuesto(Base):
     categoria: Mapped[str] = mapped_column(String(50))
     limite: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     periodo: Mapped[PeriodoPresupuesto] = mapped_column(
-        SQLEnum(PeriodoPresupuesto), 
+        SQLEnum(PeriodoPresupuesto),
         default=PeriodoPresupuesto.MENSUAL
     )
     activo: Mapped[bool] = mapped_column(default=True)
     color: Mapped[str] = mapped_column(String(7), default="#8B5CF6")
     icono: Mapped[str] = mapped_column(String(50), default="fa-wallet")
-    notas: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    notas: Mapped[str | None] = mapped_column(String(500), nullable=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     def __repr__(self) -> str:

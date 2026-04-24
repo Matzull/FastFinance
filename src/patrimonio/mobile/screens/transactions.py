@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from kivy.app import App
-from kivy.metrics import dp
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 
@@ -13,7 +12,6 @@ from patrimonio.mobile.md_compat import (
     box_layout,
     button,
     card_container,
-    kpi_card,
     notify,
     status_label,
     text_field,

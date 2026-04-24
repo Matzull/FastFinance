@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from threading import Thread
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 

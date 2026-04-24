@@ -6,24 +6,22 @@ import unicodedata
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 from openpyxl import load_workbook
-from sqlalchemy import create_engine, select, func
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from patrimonio.models import (
-    Base,
     Banco,
-    Transaccion,
-    Suscripcion,
-    Patrimonio,
-    Presupuesto,
-    TipoTransaccion,
+    Base,
     Frecuencia,
+    Patrimonio,
     PeriodoPresupuesto,
+    Presupuesto,
+    Suscripcion,
+    TipoTransaccion,
+    Transaccion,
 )
-
 
 COLUMN_ALIASES = {
     "date": {
@@ -125,7 +123,7 @@ def _normalize_header(header: str) -> str:
     return "".join(ch for ch in ascii_header.lower() if ch.isalnum())
 
 
-def _looks_like_expense(direction_value: Optional[str]) -> bool:
+def _looks_like_expense(direction_value: str | None) -> bool:
     if direction_value is None:
         return False
     normalized = _normalize_header(direction_value)
@@ -135,7 +133,7 @@ def _looks_like_expense(direction_value: Optional[str]) -> bool:
 class GestorDB:
     """Handles all database operations."""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         if db_path is None:
             db_path = Path.home() / ".patrimonio" / "patrimonio.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -164,7 +162,7 @@ class GestorDB:
 
         return indexes
 
-    def _parse_decimal(self, value: object) -> Optional[Decimal]:
+    def _parse_decimal(self, value: object) -> Decimal | None:
         if value is None:
             return None
         if isinstance(value, Decimal):
@@ -190,7 +188,7 @@ class GestorDB:
         except Exception:
             return None
 
-    def _parse_date(self, value: object) -> Optional[date]:
+    def _parse_date(self, value: object) -> date | None:
         if value is None:
             return None
         if isinstance(value, datetime):
@@ -284,7 +282,7 @@ class GestorDB:
             ):
                 continue
 
-            def value_for(column_key: str) -> Optional[object]:
+            def value_for(column_key: str) -> object | None:
                 index = indexes.get(column_key)
                 if index is None or index >= len(row_values):
                     return None
@@ -299,7 +297,7 @@ class GestorDB:
             raw_amount = self._parse_decimal(value_for("amount"))
             direction_value = value_for("direction")
 
-            amount: Optional[Decimal] = None
+            amount: Decimal | None = None
             if debit_amount is not None and debit_amount > 0:
                 amount = debit_amount
             elif raw_amount is not None:
@@ -362,7 +360,7 @@ class GestorDB:
         tipo_cuenta: str,
         saldo_inicial: Decimal = Decimal("0"),
         moneda: str = "EUR",
-        notas: Optional[str] = None,
+        notas: str | None = None,
     ) -> Banco:
         """Creates a new bank account."""
         with self.get_session() as session:
@@ -386,7 +384,7 @@ class GestorDB:
                 query = query.where(Banco.activo)
             return list(session.scalars(query).all())
 
-    def get_bank(self, banco_id: int) -> Optional[Banco]:
+    def get_bank(self, banco_id: int) -> Banco | None:
         """Gets a bank account by ID."""
         with self.get_session() as session:
             return session.get(Banco, banco_id)
@@ -425,8 +423,8 @@ class GestorDB:
         cantidad: Decimal,
         descripcion: str,
         categoria: str,
-        fecha: Optional[date] = None,
-        notas: Optional[str] = None,
+        fecha: date | None = None,
+        notas: str | None = None,
     ) -> Transaccion:
         """Creates a new transaction."""
         with self.get_session() as session:
@@ -446,11 +444,11 @@ class GestorDB:
 
     def list_transactions(
         self,
-        banco_id: Optional[int] = None,
-        tipo: Optional[TipoTransaccion] = None,
-        categoria: Optional[str] = None,
-        fecha_desde: Optional[date] = None,
-        fecha_hasta: Optional[date] = None,
+        banco_id: int | None = None,
+        tipo: TipoTransaccion | None = None,
+        categoria: str | None = None,
+        fecha_desde: date | None = None,
+        fecha_hasta: date | None = None,
         limite: int = 50,
     ) -> list[Transaccion]:
         """Lists transactions with optional filters."""
@@ -489,9 +487,9 @@ class GestorDB:
         nombre: str,
         cantidad: Decimal,
         frecuencia: Frecuencia,
-        fecha_inicio: Optional[date] = None,
+        fecha_inicio: date | None = None,
         categoria: str = "suscripciones",
-        notas: Optional[str] = None,
+        notas: str | None = None,
     ) -> Suscripcion:
         """Creates a new subscription."""
         with self.get_session() as session:
@@ -543,8 +541,8 @@ class GestorDB:
         nombre: str,
         tipo: str,
         valor: Decimal,
-        descripcion: Optional[str] = None,
-        fecha_adquisicion: Optional[date] = None,
+        descripcion: str | None = None,
+        fecha_adquisicion: date | None = None,
     ) -> Patrimonio:
         """Creates a new net worth item."""
         with self.get_session() as session:
@@ -560,7 +558,7 @@ class GestorDB:
             session.refresh(patrimonio)
             return patrimonio
 
-    def list_net_worth_items(self, tipo: Optional[str] = None) -> list[Patrimonio]:
+    def list_net_worth_items(self, tipo: str | None = None) -> list[Patrimonio]:
         """Lists all net worth items."""
         with self.get_session() as session:
             query = select(Patrimonio)
@@ -628,7 +626,7 @@ class GestorDB:
         periodo: PeriodoPresupuesto = PeriodoPresupuesto.MENSUAL,
         color: str = "#8B5CF6",
         icono: str = "fa-wallet",
-        notas: Optional[str] = None,
+        notas: str | None = None,
     ) -> Presupuesto:
         """Creates a new budget."""
         with self.get_session() as session:
@@ -654,7 +652,7 @@ class GestorDB:
                 query = query.where(Presupuesto.activo)
             return list(session.scalars(query).all())
 
-    def get_budget(self, presupuesto_id: int) -> Optional[Presupuesto]:
+    def get_budget(self, presupuesto_id: int) -> Presupuesto | None:
         """Gets a budget by ID."""
         with self.get_session() as session:
             return session.get(Presupuesto, presupuesto_id)
@@ -662,12 +660,12 @@ class GestorDB:
     def update_budget(
         self,
         presupuesto_id: int,
-        nombre: Optional[str] = None,
-        limite: Optional[Decimal] = None,
-        color: Optional[str] = None,
-        icono: Optional[str] = None,
-        notas: Optional[str] = None,
-    ) -> Optional[Presupuesto]:
+        nombre: str | None = None,
+        limite: Decimal | None = None,
+        color: str | None = None,
+        icono: str | None = None,
+        notas: str | None = None,
+    ) -> Presupuesto | None:
         """Updates an existing budget."""
         with self.get_session() as session:
             presupuesto = session.get(Presupuesto, presupuesto_id)
@@ -698,7 +696,7 @@ class GestorDB:
             return False
 
     def calculate_budget_spending(
-        self, categoria: str, mes: Optional[int] = None, año: Optional[int] = None
+        self, categoria: str, mes: int | None = None, año: int | None = None
     ) -> Decimal:
         """Calculates spending for a category in the selected period."""
         hoy = date.today()

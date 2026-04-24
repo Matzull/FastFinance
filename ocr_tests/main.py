@@ -6,5 +6,5 @@ ocr = PaddleOCR(
     use_textline_orientation=False, # Disables text line orientation classification model via this parameter
 )
 result = ocr.predict("./ocr_tests/img2.jpg")
-for res in result:  
+for res in result:
     print(res.get("rec_texts"))

@@ -1,10 +1,9 @@
 """Tests para el gestor de base de datos."""
 
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 
-
-from patrimonio.models import TipoTransaccion, Frecuencia
+from patrimonio.models import Frecuencia, TipoTransaccion
 
 
 class TestGestorDBBancos:
@@ -484,8 +483,9 @@ class TestGestorDBPresupuestos:
 
     def test_calculate_budget_spending(self, db_temp, banco_ejemplo):
         """Calcula el gasto de una categoría en el periodo."""
-        from patrimonio.models import PeriodoPresupuesto
         from datetime import date
+
+        from patrimonio.models import PeriodoPresupuesto
 
         # Crear presupuesto
         db_temp.create_budget(
@@ -518,8 +518,9 @@ class TestGestorDBPresupuestos:
 
     def test_get_budget_status(self, db_temp, banco_ejemplo):
         """Obtiene el estado de todos los presupuestos."""
-        from patrimonio.models import PeriodoPresupuesto
         from datetime import date
+
+        from patrimonio.models import PeriodoPresupuesto
 
         # Crear presupuesto
         db_temp.create_budget(

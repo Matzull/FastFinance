@@ -2,12 +2,10 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from patrimonio.models import TipoTransaccion, Frecuencia, PeriodoPresupuesto
-
+from patrimonio.models import Frecuencia, PeriodoPresupuesto, TipoTransaccion
 
 # ==================== BANCO ====================
 
@@ -16,7 +14,7 @@ class BancoBase(BaseModel):
     tipo_cuenta: str
     saldo_inicial: Decimal = Decimal("0")
     moneda: str = "EUR"
-    notas: Optional[str] = None
+    notas: str | None = None
 
 
 class BancoCreate(BancoBase):
@@ -24,18 +22,18 @@ class BancoCreate(BancoBase):
 
 
 class BancoUpdate(BaseModel):
-    nombre: Optional[str] = None
-    tipo_cuenta: Optional[str] = None
-    notas: Optional[str] = None
-    activo: Optional[bool] = None
+    nombre: str | None = None
+    tipo_cuenta: str | None = None
+    notas: str | None = None
+    activo: bool | None = None
 
 
 class BancoResponse(BancoBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     activo: bool
-    saldo_actual: Optional[Decimal] = None
+    saldo_actual: Decimal | None = None
 
 
 # ==================== TRANSACCION ====================
@@ -46,8 +44,8 @@ class TransaccionBase(BaseModel):
     cantidad: Decimal
     descripcion: str
     categoria: str
-    fecha: Optional[date] = None
-    notas: Optional[str] = None
+    fecha: date | None = None
+    notas: str | None = None
 
 
 class TransaccionCreate(TransaccionBase):
@@ -56,9 +54,9 @@ class TransaccionCreate(TransaccionBase):
 
 class TransaccionResponse(TransaccionBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
-    banco_nombre: Optional[str] = None
+    banco_nombre: str | None = None
 
 
 # ==================== SUSCRIPCION ====================
@@ -68,9 +66,9 @@ class SuscripcionBase(BaseModel):
     nombre: str
     cantidad: Decimal
     frecuencia: Frecuencia
-    fecha_inicio: Optional[date] = None
+    fecha_inicio: date | None = None
     categoria: str = "suscripciones"
-    notas: Optional[str] = None
+    notas: str | None = None
 
 
 class SuscripcionCreate(SuscripcionBase):
@@ -78,20 +76,20 @@ class SuscripcionCreate(SuscripcionBase):
 
 
 class SuscripcionUpdate(BaseModel):
-    nombre: Optional[str] = None
-    cantidad: Optional[Decimal] = None
-    frecuencia: Optional[Frecuencia] = None
-    notas: Optional[str] = None
+    nombre: str | None = None
+    cantidad: Decimal | None = None
+    frecuencia: Frecuencia | None = None
+    notas: str | None = None
 
 
 class SuscripcionResponse(SuscripcionBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     activa: bool
-    fecha_fin: Optional[date] = None
-    costo_mensual: Optional[Decimal] = None
-    banco_nombre: Optional[str] = None
+    fecha_fin: date | None = None
+    costo_mensual: Decimal | None = None
+    banco_nombre: str | None = None
 
 
 # ==================== PATRIMONIO ====================
@@ -100,8 +98,8 @@ class PatrimonioBase(BaseModel):
     nombre: str
     tipo: str  # activo o pasivo
     valor: Decimal
-    descripcion: Optional[str] = None
-    fecha_adquisicion: Optional[date] = None
+    descripcion: str | None = None
+    fecha_adquisicion: date | None = None
 
 
 class PatrimonioCreate(PatrimonioBase):
@@ -109,14 +107,14 @@ class PatrimonioCreate(PatrimonioBase):
 
 
 class PatrimonioUpdate(BaseModel):
-    nombre: Optional[str] = None
-    valor: Optional[Decimal] = None
-    descripcion: Optional[str] = None
+    nombre: str | None = None
+    valor: Decimal | None = None
+    descripcion: str | None = None
 
 
 class PatrimonioResponse(PatrimonioBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
 
 
@@ -161,7 +159,7 @@ class PresupuestoBase(BaseModel):
     periodo: PeriodoPresupuesto = PeriodoPresupuesto.MENSUAL
     color: str = "#8B5CF6"
     icono: str = "fa-wallet"
-    notas: Optional[str] = None
+    notas: str | None = None
 
 
 class PresupuestoCreate(PresupuestoBase):
@@ -169,16 +167,16 @@ class PresupuestoCreate(PresupuestoBase):
 
 
 class PresupuestoUpdate(BaseModel):
-    nombre: Optional[str] = None
-    limite: Optional[Decimal] = None
-    color: Optional[str] = None
-    icono: Optional[str] = None
-    notas: Optional[str] = None
+    nombre: str | None = None
+    limite: Decimal | None = None
+    color: str | None = None
+    icono: str | None = None
+    notas: str | None = None
 
 
 class PresupuestoResponse(PresupuestoBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     activo: bool
 

@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
-from typing import Optional
 
 from PIL import Image
 
@@ -19,8 +18,9 @@ except ImportError:
 
 # Intentar importar OpenAI para OCR con Vision
 try:
-    from openai import OpenAI
     import base64
+
+    from openai import OpenAI
 
     OPENAI_AVAILABLE = True
 except ImportError:
@@ -31,11 +31,11 @@ except ImportError:
 class ReceiptData:
     """Structured data extracted from a receipt."""
 
-    total: Optional[Decimal] = None
-    date: Optional[date] = None
-    merchant: Optional[str] = None
-    description: Optional[str] = None
-    raw_text: Optional[str] = None
+    total: Decimal | None = None
+    date: date | None = None
+    merchant: str | None = None
+    description: str | None = None
+    raw_text: str | None = None
     confidence: float = 0.0
 
     def __str__(self) -> str:
@@ -48,7 +48,7 @@ class ReceiptData:
 class ReceiptExtractor:
     """Extracts structured receipt information using OCR."""
 
-    def __init__(self, openai_api_key: Optional[str] = None):
+    def __init__(self, openai_api_key: str | None = None):
         self.openai_api_key = openai_api_key
         self.openai_client = None
         self.paddleocr = None
