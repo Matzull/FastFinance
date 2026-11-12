@@ -362,21 +362,6 @@ class GestorDB:
             "detected_columns": {key: headers[indexes[key]] for key in indexes},
         }
 
-    def import_expenses_from_statement_compat(
-        self,
-        banco_id: int,
-        file_name: str,
-        file_bytes: bytes,
-        categoria_default: str = "otros",
-    ) -> dict:
-        """Compatibility wrapper for previous Spanish argument names."""
-        return self.import_statement_expenses(
-            bank_id=banco_id,
-            file_name=file_name,
-            file_bytes=file_bytes,
-            default_category=categoria_default,
-        )
-
     # ==================== BANKS ====================
 
     def create_bank(
@@ -1042,35 +1027,6 @@ class GestorDB:
                 )
 
         return alertas
-
-
-# English method aliases for backward-compatible translation
-GestorDB.create_bank = GestorDB.create_bank
-GestorDB.list_banks = GestorDB.list_banks
-GestorDB.get_bank = GestorDB.get_bank
-GestorDB.calculate_bank_balance = GestorDB.calculate_bank_balance
-
-GestorDB.create_transaction = GestorDB.create_transaction
-GestorDB.list_transactions = GestorDB.list_transactions
-GestorDB.delete_transaction = GestorDB.delete_transaction
-
-GestorDB.create_subscription = GestorDB.create_subscription
-GestorDB.list_subscriptions = GestorDB.list_subscriptions
-GestorDB.cancel_subscription = GestorDB.cancel_subscription
-GestorDB.calculate_monthly_subscription_expense = GestorDB.calculate_monthly_subscription_cost
-
-GestorDB.create_net_worth_item = GestorDB.create_net_worth_item
-GestorDB.list_net_worth_items = GestorDB.list_net_worth_items
-GestorDB.calculate_net_worth = GestorDB.calculate_net_worth
-
-GestorDB.monthly_summary = GestorDB.monthly_summary
-GestorDB.create_budget = GestorDB.create_budget
-GestorDB.list_budgets = GestorDB.list_budgets
-GestorDB.get_budget = GestorDB.get_budget
-GestorDB.update_budget = GestorDB.update_budget
-GestorDB.delete_budget = GestorDB.delete_budget
-GestorDB.get_budget_status = GestorDB.get_budget_status
-GestorDB.get_insights = GestorDB.get_insights
 
 
 # English compatibility alias

@@ -17,25 +17,18 @@ def client():
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
         db_path = Path(tmpdir) / "test_api.db"
 
-        # Reemplazar el gestor de DB global
         from patrimonio.database import GestorDB
+        from patrimonio.web.api import get_db
+        from patrimonio.web.app import app
 
         test_db = GestorDB(db_path=db_path)
-
-        # Importar y parchear
-        from patrimonio.web import api
-
-        original_db = api.db
-        api.db = test_db
-
-        from patrimonio.web.app import app
+        app.dependency_overrides[get_db] = lambda: test_db
 
         with TestClient(app) as c:
             yield c, test_db
 
-        # Cerrar conexión y restaurar
         test_db.engine.dispose()
-        api.db = original_db
+        app.dependency_overrides.clear()
 
 
 class TestAPIBancos:
