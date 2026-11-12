@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import dataclass
 from typing import Any
@@ -18,9 +19,13 @@ class FastFinanceApiClient:
 
     base_url: str
     timeout_seconds: int = 10
+    password: str = ""
 
     def set_base_url(self, base_url: str) -> None:
         self.base_url = base_url.strip().rstrip("/")
+
+    def set_password(self, password: str) -> None:
+        self.password = password
 
     def get_summary(self) -> dict[str, Any]:
         return self._request_json("GET", "/api/resumen")
@@ -102,6 +107,9 @@ class FastFinanceApiClient:
 
         body: bytes | None = None
         headers = {"Accept": "application/json"}
+        if self.password:
+            token = base64.b64encode(f"mobile:{self.password}".encode()).decode("ascii")
+            headers["Authorization"] = f"Basic {token}"
         if payload is not None:
             body = json.dumps(payload).encode("utf-8")
             headers["Content-Type"] = "application/json"

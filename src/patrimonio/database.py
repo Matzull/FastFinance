@@ -265,56 +265,79 @@ class GestorDB:
         skipped_count = 0
         errors: list[str] = []
 
-        for row_number, row in enumerate(rows, start=2):
-            row_values = list(row)
-            if not any(value is not None and str(value).strip() for value in row_values):
-                continue
+        with self.get_session() as session:
+            # Expenses already stored for this bank, used to skip re-imported rows.
+            # Duplicates inside the same file are kept: they can be legitimate.
+            existing = {
+                (row.fecha, row.cantidad, row.descripcion)
+                for row in session.execute(
+                    select(Transaccion.fecha, Transaccion.cantidad, Transaccion.descripcion)
+                    .where(Transaccion.banco_id == bank_id)
+                    .where(Transaccion.tipo == TipoTransaccion.GASTO)
+                )
+            }
 
-            def value_for(column_key: str) -> object | None:
-                index = indexes.get(column_key)
-                if index is None or index >= len(row_values):
-                    return None
-                return row_values[index]
+            for row_number, row in enumerate(rows, start=2):
+                row_values = list(row)
+                if not any(value is not None and str(value).strip() for value in row_values):
+                    continue
 
-            parsed_date = self._parse_date(value_for("date")) or date.today()
-            description = str(value_for("description") or "").strip()
-            if not description:
-                description = "Imported expense"
+                def value_for(column_key: str) -> object | None:
+                    index = indexes.get(column_key)
+                    if index is None or index >= len(row_values):
+                        return None
+                    return row_values[index]
 
-            debit_amount = self._parse_decimal(value_for("debit"))
-            raw_amount = self._parse_decimal(value_for("amount"))
-            direction_value = value_for("direction")
+                parsed_date = self._parse_date(value_for("date"))
+                if parsed_date is None:
+                    skipped_count += 1
+                    errors.append(f"row {row_number}: invalid date {value_for('date')!r}")
+                    continue
 
-            amount: Decimal | None = None
-            if debit_amount is not None and debit_amount > 0:
-                amount = debit_amount
-            elif raw_amount is not None:
-                if raw_amount < 0:
-                    amount = abs(raw_amount)
-                elif raw_amount > 0 and _looks_like_expense(
-                    str(direction_value) if direction_value else None
-                ):
-                    amount = raw_amount
+                description = str(value_for("description") or "").strip()
+                if not description:
+                    description = "Imported expense"
 
-            if amount is None or amount <= 0:
-                skipped_count += 1
-                continue
+                debit_amount = self._parse_decimal(value_for("debit"))
+                raw_amount = self._parse_decimal(value_for("amount"))
+                direction_value = value_for("direction")
 
-            category_value = str(value_for("category") or "").strip().lower() or default_category
+                amount: Decimal | None = None
+                if debit_amount is not None and debit_amount > 0:
+                    amount = debit_amount
+                elif raw_amount is not None:
+                    if raw_amount < 0:
+                        amount = abs(raw_amount)
+                    elif raw_amount > 0 and _looks_like_expense(
+                        str(direction_value) if direction_value else None
+                    ):
+                        amount = raw_amount
 
-            try:
-                self.create_transaction(
-                    banco_id=bank_id,
-                    tipo=TipoTransaccion.GASTO,
-                    cantidad=amount,
-                    descripcion=description,
-                    categoria=category_value,
-                    fecha=parsed_date,
+                if amount is None or amount <= 0:
+                    skipped_count += 1
+                    continue
+
+                amount = amount.quantize(Decimal("0.01"))
+                if (parsed_date, amount, description) in existing:
+                    skipped_count += 1
+                    continue
+
+                category_value = (
+                    str(value_for("category") or "").strip().lower() or default_category
+                )
+                session.add(
+                    Transaccion(
+                        banco_id=bank_id,
+                        tipo=TipoTransaccion.GASTO,
+                        cantidad=amount,
+                        descripcion=description,
+                        categoria=category_value,
+                        fecha=parsed_date,
+                    )
                 )
                 imported_count += 1
-            except Exception as exc:
-                skipped_count += 1
-                errors.append(f"row {row_number}: {exc}")
+
+            session.commit()
 
         return {
             "imported_count": imported_count,
@@ -374,6 +397,19 @@ class GestorDB:
         """Gets a bank account by ID."""
         with self.get_session() as session:
             return session.get(Banco, banco_id)
+
+    def update_bank(self, banco_id: int, **fields: object) -> Banco | None:
+        """Updates the given fields of a bank account; None values are ignored."""
+        with self.get_session() as session:
+            banco = session.get(Banco, banco_id)
+            if not banco:
+                return None
+            for name, value in fields.items():
+                if value is not None:
+                    setattr(banco, name, value)
+            session.commit()
+            session.refresh(banco)
+            return banco
 
     def calculate_bank_balance(self, banco_id: int) -> Decimal:
         """Calculates current balance for a bank account."""

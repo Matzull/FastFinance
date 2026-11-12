@@ -18,6 +18,7 @@ from patrimonio.models import (
 from patrimonio.web.schemas import (
     BancoCreate,
     BancoResponse,
+    BancoUpdate,
     EstadoPresupuesto,
     EvolucionMensual,
     GastosPorCategoria,
@@ -103,6 +104,24 @@ def get_bank(banco_id: int):
         notas=banco.notas,
         activo=banco.activo,
         saldo_actual=saldo,
+    )
+
+
+@router.put("/bancos/{banco_id}", response_model=BancoResponse)
+def update_bank(banco_id: int, datos: BancoUpdate):
+    """Updates a bank account."""
+    banco = db.update_bank(banco_id, **datos.model_dump(exclude_unset=True))
+    if not banco:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    return BancoResponse(
+        id=banco.id,
+        nombre=banco.nombre,
+        tipo_cuenta=banco.tipo_cuenta,
+        saldo_inicial=banco.saldo_inicial,
+        moneda=banco.moneda,
+        notas=banco.notas,
+        activo=banco.activo,
+        saldo_actual=db.calculate_bank_balance(banco_id),
     )
 
 

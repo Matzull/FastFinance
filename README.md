@@ -88,6 +88,7 @@ Set bot token in your environment:
 
 ```bash
 export TELEGRAM_BOT_TOKEN="<your-token>"
+export TELEGRAM_ALLOWED_USER_IDS="123456789"  # comma-separated; the bot ignores everyone else
 ```
 
 Optional OCR fallback key:

@@ -27,6 +27,7 @@ class SettingsScreen(Screen):
 
         self.status_label = status_label("")
         self.url_input = text_field("Backend base URL")
+        self.password_input = text_field("Backend password (optional)", password=True)
 
         save_btn = button("Save API URL")
         save_btn.bind(on_release=lambda *_: self.save())
@@ -36,6 +37,7 @@ class SettingsScreen(Screen):
         card = card_container()
         card.add_widget(title_label("Backend configuration"))
         card.add_widget(self.url_input)
+        card.add_widget(self.password_input)
         card.add_widget(save_btn)
         card.add_widget(self.status_label)
 
@@ -50,6 +52,7 @@ class SettingsScreen(Screen):
         del args
         app = App.get_running_app()
         self.url_input.text = app.settings.base_url
+        self.password_input.text = app.settings.password
 
     def save(self) -> None:
         app = App.get_running_app()
@@ -60,8 +63,10 @@ class SettingsScreen(Screen):
             return
 
         app.settings.base_url = base_url
+        app.settings.password = self.password_input.text
         app.settings_store.save(app.settings)
         app.api_client.set_base_url(base_url)
+        app.api_client.set_password(app.settings.password)
         self.status_label.text = "Saved. Verifying backend..."
 
         def work():

@@ -33,7 +33,9 @@ class FastFinanceMobileApp(MDApp):
 
         self.settings_store = SettingsStore()
         self.settings = self.settings_store.load()
-        self.api_client = FastFinanceApiClient(base_url=self.settings.base_url)
+        self.api_client = FastFinanceApiClient(
+            base_url=self.settings.base_url, password=self.settings.password
+        )
 
         self.theme_cls.theme_style = "Light"
 

@@ -2,10 +2,15 @@
 
 from datetime import date
 from decimal import Decimal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from patrimonio.models import Frecuencia, PeriodoPresupuesto, TipoTransaccion
+
+PositiveAmount = Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)]
+CurrencyCode = Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
+TipoPatrimonio = Literal["activo", "pasivo"]
 
 # ==================== BANCO ====================
 
@@ -19,12 +24,14 @@ class BancoBase(BaseModel):
 
 
 class BancoCreate(BancoBase):
-    pass
+    moneda: CurrencyCode = "EUR"
 
 
 class BancoUpdate(BaseModel):
     nombre: str | None = None
     tipo_cuenta: str | None = None
+    saldo_inicial: Decimal | None = None
+    moneda: CurrencyCode | None = None
     notas: str | None = None
     activo: bool | None = None
 
@@ -51,7 +58,15 @@ class TransaccionBase(BaseModel):
 
 
 class TransaccionCreate(TransaccionBase):
-    pass
+    cantidad: PositiveAmount
+
+    @field_validator("tipo")
+    @classmethod
+    def reject_transfers(cls, value: TipoTransaccion) -> TipoTransaccion:
+        # Transfers need a source and a destination account, which the model lacks.
+        if value == TipoTransaccion.TRANSFERENCIA:
+            raise ValueError("Transfers are not supported yet")
+        return value
 
 
 class TransaccionResponse(TransaccionBase):
@@ -75,7 +90,7 @@ class SuscripcionBase(BaseModel):
 
 
 class SuscripcionCreate(SuscripcionBase):
-    pass
+    cantidad: PositiveAmount
 
 
 class SuscripcionUpdate(BaseModel):
@@ -100,14 +115,14 @@ class SuscripcionResponse(SuscripcionBase):
 
 class PatrimonioBase(BaseModel):
     nombre: str
-    tipo: str  # activo o pasivo
+    tipo: TipoPatrimonio
     valor: Decimal
     descripcion: str | None = None
     fecha_adquisicion: date | None = None
 
 
 class PatrimonioCreate(PatrimonioBase):
-    pass
+    valor: PositiveAmount
 
 
 class PatrimonioUpdate(BaseModel):
@@ -120,6 +135,7 @@ class PatrimonioResponse(PatrimonioBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    tipo: str  # free text in rows created before validation existed
 
 
 # ==================== RESUMEN ====================
@@ -169,12 +185,12 @@ class PresupuestoBase(BaseModel):
 
 
 class PresupuestoCreate(PresupuestoBase):
-    pass
+    limite: PositiveAmount
 
 
 class PresupuestoUpdate(BaseModel):
     nombre: str | None = None
-    limite: Decimal | None = None
+    limite: PositiveAmount | None = None
     color: str | None = None
     icono: str | None = None
     notas: str | None = None
