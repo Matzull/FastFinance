@@ -91,10 +91,11 @@ export TELEGRAM_BOT_TOKEN="<your-token>"
 export TELEGRAM_ALLOWED_USER_IDS="123456789"  # comma-separated; the bot ignores everyone else
 ```
 
-Optional OCR fallback key:
+Receipt OCR uses OpenAI Vision when a key is set, and local PaddleOCR otherwise:
 
 ```bash
 export OPENAI_API_KEY="<your-openai-key>"
+uv sync --extra ocr  # optional: installs PaddleOCR (large download)
 ```
 
 Then run:
