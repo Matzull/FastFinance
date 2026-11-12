@@ -6,7 +6,7 @@ from decimal import Decimal
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 
-from patrimonio.database import GestorDB
+from patrimonio.database import GestorDB, last_months
 from patrimonio.models import (
     Banco,
     TipoTransaccion,
@@ -48,9 +48,10 @@ db = GestorDB()
 def list_banks(solo_activos: bool = True):
     """Lists all bank accounts."""
     bancos = db.list_banks(solo_activos=solo_activos)
+    saldos = db.bank_balances(solo_activos=solo_activos)
     result = []
     for banco in bancos:
-        saldo = db.calculate_bank_balance(banco.id)
+        saldo = saldos[banco.id]
         result.append(
             BancoResponse(
                 id=banco.id,
@@ -160,7 +161,6 @@ def list_transactions(
     )
     result = []
     for t in transacciones:
-        banco = db.get_bank(t.banco_id)
         result.append(
             TransaccionResponse(
                 id=t.id,
@@ -171,7 +171,7 @@ def list_transactions(
                 categoria=t.categoria,
                 fecha=t.fecha,
                 notas=t.notas,
-                banco_nombre=banco.nombre if banco else None,
+                banco_nombre=t.banco.nombre if t.banco else None,
             )
         )
     return result
@@ -252,7 +252,6 @@ def list_subscriptions(solo_activas: bool = True):
     suscripciones = db.list_subscriptions(solo_activas=solo_activas)
     result = []
     for s in suscripciones:
-        banco = db.get_bank(s.banco_id)
         result.append(
             SuscripcionResponse(
                 id=s.id,
@@ -266,7 +265,7 @@ def list_subscriptions(solo_activas: bool = True):
                 notas=s.notas,
                 activa=s.activa,
                 costo_mensual=s.costo_mensual(),
-                banco_nombre=banco.nombre if banco else None,
+                banco_nombre=s.banco.nombre if s.banco else None,
             )
         )
     return result
@@ -372,28 +371,15 @@ def get_summary():
     """Gets the overall financial summary."""
     hoy = date.today()
 
-    # Calculate totals
-    bancos = db.list_banks()
-    total_bancos = sum(db.calculate_bank_balance(b.id) for b in bancos)
-
-    with db.get_session() as session:
-        total_activos = session.scalar(
-            select(func.sum(PatrimonioModel.valor)).where(PatrimonioModel.tipo == "activo")
-        ) or Decimal("0")
-
-        total_pasivos = session.scalar(
-            select(func.sum(PatrimonioModel.valor)).where(PatrimonioModel.tipo == "pasivo")
-        ) or Decimal("0")
-
-    patrimonio_neto = total_bancos + total_activos - total_pasivos
+    totales = db.net_worth_breakdown()
     gasto_suscripciones = db.calculate_monthly_subscription_cost()
     resumen_mes = db.monthly_summary(hoy.month, hoy.year)
 
     return ResumenGeneral(
-        patrimonio_neto=patrimonio_neto,
-        total_bancos=total_bancos,
-        total_activos=total_activos,
-        total_pasivos=total_pasivos,
+        patrimonio_neto=totales["neto"],
+        total_bancos=totales["bancos"],
+        total_activos=totales["activos"],
+        total_pasivos=totales["pasivos"],
         gasto_mensual_suscripciones=gasto_suscripciones,
         resumen_mes_actual=ResumenMensual(**resumen_mes),
     )
@@ -434,38 +420,28 @@ def expenses_by_category(
 @router.get("/estadisticas/evolucion-mensual", response_model=list[EvolucionMensual])
 def monthly_evolution(meses: int = Query(12, le=24)):
     """Obtiene la evolución de ingresos y gastos por mes."""
-    hoy = date.today()
-    resultado = []
-
-    for i in range(meses - 1, -1, -1):
-        # Calcular mes
-        mes = hoy.month - i
-        año = hoy.year
-        while mes <= 0:
-            mes += 12
-            año -= 1
-
-        resumen = db.monthly_summary(mes, año)
-        resultado.append(
-            EvolucionMensual(
-                mes=f"{año}-{mes:02d}",
-                ingresos=resumen["ingresos"],
-                gastos=resumen["gastos"],
-                balance=resumen["balance"],
-            )
+    months = last_months(date.today(), meses)
+    totals = db.monthly_totals(months)
+    return [
+        EvolucionMensual(
+            mes=f"{año}-{mes:02d}",
+            ingresos=totals[(año, mes)]["ingresos"],
+            gastos=totals[(año, mes)]["gastos"],
+            balance=totals[(año, mes)]["ingresos"] - totals[(año, mes)]["gastos"],
         )
-
-    return resultado
+        for año, mes in months
+    ]
 
 
 @router.get("/estadisticas/saldo-bancos")
 def balance_by_bank():
     """Obtiene el saldo de cada banco para gráficas."""
     bancos = db.list_banks()
+    saldos = db.bank_balances()
     return [
         {
             "nombre": b.nombre,
-            "saldo": float(db.calculate_bank_balance(b.id)),
+            "saldo": float(saldos[b.id]),
             "tipo": b.tipo_cuenta,
         }
         for b in bancos

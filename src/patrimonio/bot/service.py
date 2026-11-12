@@ -46,10 +46,11 @@ class FinanceBotService:
         if not banks:
             return "❌ No accounts registered."
 
+        balances = self.db.bank_balances()
         total = Decimal("0")
         message = "💰 *Current balances:*\n\n"
         for bank in banks:
-            balance = self.db.calculate_bank_balance(bank.id)
+            balance = balances[bank.id]
             total += balance
             sign = "🟢" if balance >= 0 else "🔴"
             message += f"{sign} {self._esc(bank.nombre)}: *{balance:,.2f}€*\n"
@@ -60,9 +61,10 @@ class FinanceBotService:
         if not banks:
             return None
 
+        balances = self.db.bank_balances()
         message = "🏦 *Your bank accounts:*\n\n"
         for bank in banks:
-            balance = self.db.calculate_bank_balance(bank.id)
+            balance = balances[bank.id]
             emoji = "💳" if bank.tipo_cuenta == "corriente" else "💰"
             message += f"{emoji} *{self._esc(bank.nombre)}*\n"
             message += f"   Type: {self._esc(bank.tipo_cuenta)}\n"
@@ -114,13 +116,8 @@ class FinanceBotService:
         return message + f"\n💰 *Monthly total: {monthly_total:,.2f}€*"
 
     def get_net_worth_message(self) -> str:
-        assets = sum(
-            (item.valor for item in self.db.list_net_worth_items(tipo="activo")), Decimal("0")
-        )
-        liabilities = sum(
-            (item.valor for item in self.db.list_net_worth_items(tipo="pasivo")), Decimal("0")
-        )
-        net_worth = self.db.calculate_net_worth()
+        totals = self.db.net_worth_breakdown()
+        assets, liabilities, net_worth = totals["activos"], totals["pasivos"], totals["neto"]
         message = "🏛️ *Your Net Worth*\n\n"
         message += f"📈 Assets: *+{assets:,.2f}€*\n"
         message += f"📉 Liabilities: *-{liabilities:,.2f}€*\n"
