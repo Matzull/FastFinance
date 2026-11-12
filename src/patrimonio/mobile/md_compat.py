@@ -60,6 +60,7 @@ def text_field(
     *,
     text: str = "",
     numeric: bool = False,
+    password: bool = False,
 ):
     kwargs = {
         "hint_text": hint_text,
@@ -67,6 +68,7 @@ def text_field(
         "mode": "outlined",
         "size_hint_y": None,
         "height": dp(56),
+        "password": password,
     }
     if numeric:
         kwargs["input_filter"] = "int"

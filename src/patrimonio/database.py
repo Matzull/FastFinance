@@ -8,8 +8,8 @@ from decimal import Decimal
 from pathlib import Path
 
 from openpyxl import load_workbook
-from sqlalchemy import create_engine, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, extract, func, select
+from sqlalchemy.orm import Session, selectinload
 
 from patrimonio.models import (
     Banco,
@@ -119,6 +119,22 @@ def _normalize_header(header: str) -> str:
         unicodedata.normalize("NFKD", str(header)).encode("ascii", "ignore").decode("ascii")
     )
     return "".join(ch for ch in ascii_header.lower() if ch.isalnum())
+
+
+def _month_range(año: int, mes: int) -> tuple[date, date]:
+    """Return [first day of the month, first day of the next month)."""
+    if mes == 12:
+        return date(año, 12, 1), date(año + 1, 1, 1)
+    return date(año, mes, 1), date(año, mes + 1, 1)
+
+
+def last_months(today: date, count: int) -> list[tuple[int, int]]:
+    """Return (year, month) pairs for the last `count` months, oldest first."""
+    months = []
+    for offset in range(count - 1, -1, -1):
+        index = today.year * 12 + today.month - 1 - offset
+        months.append((index // 12, index % 12 + 1))
+    return months
 
 
 def _looks_like_expense(direction_value: str | None) -> bool:
@@ -265,56 +281,79 @@ class GestorDB:
         skipped_count = 0
         errors: list[str] = []
 
-        for row_number, row in enumerate(rows, start=2):
-            row_values = list(row)
-            if not any(value is not None and str(value).strip() for value in row_values):
-                continue
+        with self.get_session() as session:
+            # Expenses already stored for this bank, used to skip re-imported rows.
+            # Duplicates inside the same file are kept: they can be legitimate.
+            existing = {
+                (row.fecha, row.cantidad, row.descripcion)
+                for row in session.execute(
+                    select(Transaccion.fecha, Transaccion.cantidad, Transaccion.descripcion)
+                    .where(Transaccion.banco_id == bank_id)
+                    .where(Transaccion.tipo == TipoTransaccion.GASTO)
+                )
+            }
 
-            def value_for(column_key: str) -> object | None:
-                index = indexes.get(column_key)
-                if index is None or index >= len(row_values):
-                    return None
-                return row_values[index]
+            for row_number, row in enumerate(rows, start=2):
+                row_values = list(row)
+                if not any(value is not None and str(value).strip() for value in row_values):
+                    continue
 
-            parsed_date = self._parse_date(value_for("date")) or date.today()
-            description = str(value_for("description") or "").strip()
-            if not description:
-                description = "Imported expense"
+                def value_for(column_key: str) -> object | None:
+                    index = indexes.get(column_key)
+                    if index is None or index >= len(row_values):
+                        return None
+                    return row_values[index]
 
-            debit_amount = self._parse_decimal(value_for("debit"))
-            raw_amount = self._parse_decimal(value_for("amount"))
-            direction_value = value_for("direction")
+                parsed_date = self._parse_date(value_for("date"))
+                if parsed_date is None:
+                    skipped_count += 1
+                    errors.append(f"row {row_number}: invalid date {value_for('date')!r}")
+                    continue
 
-            amount: Decimal | None = None
-            if debit_amount is not None and debit_amount > 0:
-                amount = debit_amount
-            elif raw_amount is not None:
-                if raw_amount < 0:
-                    amount = abs(raw_amount)
-                elif raw_amount > 0 and _looks_like_expense(
-                    str(direction_value) if direction_value else None
-                ):
-                    amount = raw_amount
+                description = str(value_for("description") or "").strip()
+                if not description:
+                    description = "Imported expense"
 
-            if amount is None or amount <= 0:
-                skipped_count += 1
-                continue
+                debit_amount = self._parse_decimal(value_for("debit"))
+                raw_amount = self._parse_decimal(value_for("amount"))
+                direction_value = value_for("direction")
 
-            category_value = str(value_for("category") or "").strip().lower() or default_category
+                amount: Decimal | None = None
+                if debit_amount is not None and debit_amount > 0:
+                    amount = debit_amount
+                elif raw_amount is not None:
+                    if raw_amount < 0:
+                        amount = abs(raw_amount)
+                    elif raw_amount > 0 and _looks_like_expense(
+                        str(direction_value) if direction_value else None
+                    ):
+                        amount = raw_amount
 
-            try:
-                self.create_transaction(
-                    banco_id=bank_id,
-                    tipo=TipoTransaccion.GASTO,
-                    cantidad=amount,
-                    descripcion=description,
-                    categoria=category_value,
-                    fecha=parsed_date,
+                if amount is None or amount <= 0:
+                    skipped_count += 1
+                    continue
+
+                amount = amount.quantize(Decimal("0.01"))
+                if (parsed_date, amount, description) in existing:
+                    skipped_count += 1
+                    continue
+
+                category_value = (
+                    str(value_for("category") or "").strip().lower() or default_category
+                )
+                session.add(
+                    Transaccion(
+                        banco_id=bank_id,
+                        tipo=TipoTransaccion.GASTO,
+                        cantidad=amount,
+                        descripcion=description,
+                        categoria=category_value,
+                        fecha=parsed_date,
+                    )
                 )
                 imported_count += 1
-            except Exception as exc:
-                skipped_count += 1
-                errors.append(f"row {row_number}: {exc}")
+
+            session.commit()
 
         return {
             "imported_count": imported_count,
@@ -322,21 +361,6 @@ class GestorDB:
             "errors": errors,
             "detected_columns": {key: headers[indexes[key]] for key in indexes},
         }
-
-    def import_expenses_from_statement_compat(
-        self,
-        banco_id: int,
-        file_name: str,
-        file_bytes: bytes,
-        categoria_default: str = "otros",
-    ) -> dict:
-        """Compatibility wrapper for previous Spanish argument names."""
-        return self.import_statement_expenses(
-            bank_id=banco_id,
-            file_name=file_name,
-            file_bytes=file_bytes,
-            default_category=categoria_default,
-        )
 
     # ==================== BANKS ====================
 
@@ -375,6 +399,19 @@ class GestorDB:
         with self.get_session() as session:
             return session.get(Banco, banco_id)
 
+    def update_bank(self, banco_id: int, **fields: object) -> Banco | None:
+        """Updates the given fields of a bank account; None values are ignored."""
+        with self.get_session() as session:
+            banco = session.get(Banco, banco_id)
+            if not banco:
+                return None
+            for name, value in fields.items():
+                if value is not None:
+                    setattr(banco, name, value)
+            session.commit()
+            session.refresh(banco)
+            return banco
+
     def calculate_bank_balance(self, banco_id: int) -> Decimal:
         """Calculates current balance for a bank account."""
         with self.get_session() as session:
@@ -399,6 +436,26 @@ class GestorDB:
             ) or Decimal("0")
 
             return saldo + ingresos - gastos
+
+    def bank_balances(self, solo_activos: bool = True) -> dict[int, Decimal]:
+        """Current balance of every bank account, computed in two queries."""
+        with self.get_session() as session:
+            query = select(Banco.id, Banco.saldo_inicial)
+            if solo_activos:
+                query = query.where(Banco.activo)
+            balances = {row.id: row.saldo_inicial for row in session.execute(query)}
+
+            totals = session.execute(
+                select(Transaccion.banco_id, Transaccion.tipo, func.sum(Transaccion.cantidad))
+                .where(Transaccion.banco_id.in_(balances))
+                .group_by(Transaccion.banco_id, Transaccion.tipo)
+            )
+            for banco_id, tipo, total in totals:
+                if tipo == TipoTransaccion.INGRESO:
+                    balances[banco_id] += total
+                elif tipo == TipoTransaccion.GASTO:
+                    balances[banco_id] -= total
+            return balances
 
     # ==================== TRANSACTIONS ====================
 
@@ -439,7 +496,11 @@ class GestorDB:
     ) -> list[Transaccion]:
         """Lists transactions with optional filters."""
         with self.get_session() as session:
-            query = select(Transaccion).order_by(Transaccion.fecha.desc())
+            query = (
+                select(Transaccion)
+                .options(selectinload(Transaccion.banco))
+                .order_by(Transaccion.fecha.desc())
+            )
 
             if banco_id:
                 query = query.where(Transaccion.banco_id == banco_id)
@@ -496,7 +557,7 @@ class GestorDB:
     def list_subscriptions(self, solo_activas: bool = True) -> list[Suscripcion]:
         """Lists all subscriptions."""
         with self.get_session() as session:
-            query = select(Suscripcion)
+            query = select(Suscripcion).options(selectinload(Suscripcion.banco))
             if solo_activas:
                 query = query.where(Suscripcion.activa)
             return list(session.scalars(query).all())
@@ -552,32 +613,62 @@ class GestorDB:
                 query = query.where(Patrimonio.tipo == tipo)
             return list(session.scalars(query).all())
 
-    def calculate_net_worth(self) -> Decimal:
-        """Calculates net worth (assets minus liabilities)."""
+    def net_worth_breakdown(self) -> dict[str, Decimal]:
+        """Bank balances, assets and liabilities that make up net worth."""
         with self.get_session() as session:
-            activos = session.scalar(
-                select(func.sum(Patrimonio.valor)).where(Patrimonio.tipo == "activo")
-            ) or Decimal("0")
+            totals = dict(
+                session.execute(
+                    select(Patrimonio.tipo, func.sum(Patrimonio.valor))
+                    .where(Patrimonio.tipo.in_(["activo", "pasivo"]))
+                    .group_by(Patrimonio.tipo)
+                )
+                .tuples()
+                .all()
+            )
+        bancos = sum(self.bank_balances().values(), Decimal("0"))
+        activos = totals.get("activo") or Decimal("0")
+        pasivos = totals.get("pasivo") or Decimal("0")
+        return {
+            "bancos": bancos,
+            "activos": activos,
+            "pasivos": pasivos,
+            "neto": bancos + activos - pasivos,
+        }
 
-            pasivos = session.scalar(
-                select(func.sum(Patrimonio.valor)).where(Patrimonio.tipo == "pasivo")
-            ) or Decimal("0")
-
-            # Add bank balances
-            for banco in self.list_banks():
-                activos += self.calculate_bank_balance(banco.id)
-
-            return activos - pasivos
+    def calculate_net_worth(self) -> Decimal:
+        """Calculates net worth (bank balances plus assets minus liabilities)."""
+        return self.net_worth_breakdown()["neto"]
 
     # ==================== SUMMARIES ====================
 
+    def monthly_totals(self, months: list[tuple[int, int]]) -> dict[tuple[int, int], dict]:
+        """Income and expense totals for each (year, month), in a single query."""
+        result = {month: {"ingresos": Decimal("0"), "gastos": Decimal("0")} for month in months}
+        if not months:
+            return result
+
+        start, _ = _month_range(*min(months))
+        _, end = _month_range(*max(months))
+        year_col = extract("year", Transaccion.fecha)
+        month_col = extract("month", Transaccion.fecha)
+        with self.get_session() as session:
+            rows = session.execute(
+                select(year_col, month_col, Transaccion.tipo, func.sum(Transaccion.cantidad))
+                .where(Transaccion.fecha >= start)
+                .where(Transaccion.fecha < end)
+                .where(Transaccion.tipo.in_([TipoTransaccion.INGRESO, TipoTransaccion.GASTO]))
+                .group_by(year_col, month_col, Transaccion.tipo)
+            )
+            for year, month, tipo, total in rows:
+                key = (int(year), int(month))
+                if key in result:
+                    field = "ingresos" if tipo == TipoTransaccion.INGRESO else "gastos"
+                    result[key][field] = total
+        return result
+
     def monthly_summary(self, mes: int, año: int) -> dict:
         """Generates a summary for the specified month."""
-        fecha_inicio = date(año, mes, 1)
-        if mes == 12:
-            fecha_fin = date(año + 1, 1, 1)
-        else:
-            fecha_fin = date(año, mes + 1, 1)
+        fecha_inicio, fecha_fin = _month_range(año, mes)
 
         with self.get_session() as session:
             ingresos = session.scalar(
@@ -689,11 +780,7 @@ class GestorDB:
         mes = mes or hoy.month
         año = año or hoy.year
 
-        fecha_inicio = date(año, mes, 1)
-        if mes == 12:
-            fecha_fin = date(año + 1, 1, 1)
-        else:
-            fecha_fin = date(año, mes + 1, 1)
+        fecha_inicio, fecha_fin = _month_range(año, mes)
 
         with self.get_session() as session:
             gasto = session.scalar(
@@ -710,8 +797,24 @@ class GestorDB:
         presupuestos = self.list_budgets(solo_activos=True)
         resultado = []
 
+        hoy = date.today()
+        fecha_inicio, fecha_fin = _month_range(hoy.year, hoy.month)
+        with self.get_session() as session:
+            gasto_por_categoria = dict(
+                session.execute(
+                    select(Transaccion.categoria, func.sum(Transaccion.cantidad))
+                    .where(Transaccion.tipo == TipoTransaccion.GASTO)
+                    .where(Transaccion.categoria.in_({p.categoria for p in presupuestos}))
+                    .where(Transaccion.fecha >= fecha_inicio)
+                    .where(Transaccion.fecha < fecha_fin)
+                    .group_by(Transaccion.categoria)
+                )
+                .tuples()
+                .all()
+            )
+
         for p in presupuestos:
-            gasto = self.calculate_budget_spending(p.categoria)
+            gasto = gasto_por_categoria.get(p.categoria) or Decimal("0")
             limite = p.limite_mensual()
             porcentaje = (gasto / limite * 100) if limite > 0 else Decimal("0")
             disponible = limite - gasto
@@ -739,34 +842,24 @@ class GestorDB:
         """Generates financial insights and analytics."""
         today = date.today()
 
-        # Gather data for the last 6 months.
-        monthly_expenses = []
-        monthly_income = []
-        for i in range(6):
-            month = today.month - i
-            year = today.year
-            if month <= 0:
-                month += 12
-                year -= 1
-            summary = self.monthly_summary(month, year)
-            monthly_expenses.append(float(summary["gastos"]))
-            monthly_income.append(float(summary["ingresos"]))
+        # Gather data for the last 6 months (oldest first, current month last).
+        months = last_months(today, 6)
+        totals = self.monthly_totals(months)
+        monthly_expenses = [float(totals[m]["gastos"]) for m in months]
+        monthly_income = [float(totals[m]["ingresos"]) for m in months]
 
         # Calculate averages.
         average_expenses = sum(monthly_expenses) / len(monthly_expenses) if monthly_expenses else 0
         average_income = sum(monthly_income) / len(monthly_income) if monthly_income else 0
 
-        # Current month summary.
-        current_summary = self.monthly_summary(today.month, today.year)
+        # Current and previous month summaries.
+        current = totals[months[-1]]
+        current_summary = {**current, "balance": current["ingresos"] - current["gastos"]}
+        previous_summary = totals[months[-2]]
 
         # Spending by category (current month).
+        start_date, end_date = _month_range(today.year, today.month)
         with self.get_session() as session:
-            start_date = date(today.year, today.month, 1)
-            if today.month == 12:
-                end_date = date(today.year + 1, 1, 1)
-            else:
-                end_date = date(today.year, today.month + 1, 1)
-
             expenses_by_category = session.execute(
                 select(Transaccion.categoria, func.sum(Transaccion.cantidad).label("total"))
                 .where(Transaccion.tipo == TipoTransaccion.GASTO)
@@ -789,13 +882,6 @@ class GestorDB:
             )
 
         # Comparison with previous month.
-        previous_month = today.month - 1
-        previous_year = today.year
-        if previous_month <= 0:
-            previous_month = 12
-            previous_year -= 1
-        previous_summary = self.monthly_summary(previous_month, previous_year)
-
         expenses_variation = 0
         if previous_summary["gastos"] > 0:
             expenses_variation = float(
@@ -805,10 +891,7 @@ class GestorDB:
             )
 
         # Remaining days in current month.
-        if today.month == 12:
-            last_day = date(today.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            last_day = date(today.year, today.month + 1, 1) - timedelta(days=1)
+        last_day = end_date - timedelta(days=1)
         remaining_days = (last_day - today).days
 
         # Average daily spending.
@@ -944,35 +1027,6 @@ class GestorDB:
                 )
 
         return alertas
-
-
-# English method aliases for backward-compatible translation
-GestorDB.create_bank = GestorDB.create_bank
-GestorDB.list_banks = GestorDB.list_banks
-GestorDB.get_bank = GestorDB.get_bank
-GestorDB.calculate_bank_balance = GestorDB.calculate_bank_balance
-
-GestorDB.create_transaction = GestorDB.create_transaction
-GestorDB.list_transactions = GestorDB.list_transactions
-GestorDB.delete_transaction = GestorDB.delete_transaction
-
-GestorDB.create_subscription = GestorDB.create_subscription
-GestorDB.list_subscriptions = GestorDB.list_subscriptions
-GestorDB.cancel_subscription = GestorDB.cancel_subscription
-GestorDB.calculate_monthly_subscription_expense = GestorDB.calculate_monthly_subscription_cost
-
-GestorDB.create_net_worth_item = GestorDB.create_net_worth_item
-GestorDB.list_net_worth_items = GestorDB.list_net_worth_items
-GestorDB.calculate_net_worth = GestorDB.calculate_net_worth
-
-GestorDB.monthly_summary = GestorDB.monthly_summary
-GestorDB.create_budget = GestorDB.create_budget
-GestorDB.list_budgets = GestorDB.list_budgets
-GestorDB.get_budget = GestorDB.get_budget
-GestorDB.update_budget = GestorDB.update_budget
-GestorDB.delete_budget = GestorDB.delete_budget
-GestorDB.get_budget_status = GestorDB.get_budget_status
-GestorDB.get_insights = GestorDB.get_insights
 
 
 # English compatibility alias

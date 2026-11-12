@@ -572,3 +572,58 @@ class TestGestorDBPresupuestos:
         assert isinstance(insights, dict)
         # Debería tener claves esperadas
         assert "promedio_gastos" in insights or "tasa_ahorro" in insights or len(insights) > 0
+
+
+class TestGestorDBConsultasAgregadas:
+    """Los métodos agregados deben coincidir con los cálculos uno a uno."""
+
+    def test_last_months_cruza_el_año(self):
+        from patrimonio.database import last_months
+
+        assert last_months(date(2026, 2, 15), 4) == [(2025, 11), (2025, 12), (2026, 1), (2026, 2)]
+
+    def test_bank_balances_coincide(self, db_temp, banco_ejemplo, transaccion_ingreso):
+        otro = db_temp.create_bank(nombre="Otro", tipo_cuenta="ahorro")
+        db_temp.create_transaction(
+            banco_id=otro.id,
+            tipo=TipoTransaccion.GASTO,
+            cantidad=Decimal("20.00"),
+            descripcion="x",
+            categoria="otros",
+        )
+        balances = db_temp.bank_balances()
+        assert balances == {
+            banco_ejemplo.id: db_temp.calculate_bank_balance(banco_ejemplo.id),
+            otro.id: db_temp.calculate_bank_balance(otro.id),
+        }
+        assert balances[otro.id] == Decimal("-20.00")
+
+    def test_monthly_totals_coincide_con_monthly_summary(self, db_temp, banco_ejemplo):
+        for fecha, tipo, cantidad in [
+            (date(2025, 12, 31), TipoTransaccion.GASTO, "10.00"),
+            (date(2026, 1, 1), TipoTransaccion.GASTO, "5.00"),
+            (date(2026, 1, 15), TipoTransaccion.INGRESO, "100.00"),
+        ]:
+            db_temp.create_transaction(
+                banco_id=banco_ejemplo.id,
+                tipo=tipo,
+                cantidad=Decimal(cantidad),
+                descripcion="x",
+                categoria="otros",
+                fecha=fecha,
+            )
+        months = [(2025, 11), (2025, 12), (2026, 1)]
+        totals = db_temp.monthly_totals(months)
+        for año, mes in months:
+            summary = db_temp.monthly_summary(mes, año)
+            assert totals[(año, mes)]["ingresos"] == summary["ingresos"]
+            assert totals[(año, mes)]["gastos"] == summary["gastos"]
+        assert totals[(2025, 12)]["gastos"] == Decimal("10.00")
+
+    def test_net_worth_breakdown(
+        self, db_temp, banco_ejemplo, patrimonio_activo, patrimonio_pasivo
+    ):
+        totales = db_temp.net_worth_breakdown()
+        assert totales["bancos"] == Decimal("1000.00")
+        assert totales["neto"] == Decimal("51000.00")
+        assert db_temp.calculate_net_worth() == totales["neto"]

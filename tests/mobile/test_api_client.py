@@ -77,3 +77,15 @@ def test_http_error_raises_api_client_error(monkeypatch):
 
     with pytest.raises(ApiClientError, match="HTTP 400"):
         client.get_summary()
+
+
+def test_password_sends_basic_auth_header(monkeypatch):
+    client = FastFinanceApiClient(base_url="http://example", password="secreto")
+
+    def fake_urlopen(req, timeout):
+        del timeout
+        assert req.get_header("Authorization") == "Basic bW9iaWxlOnNlY3JldG8="
+        return _Response({})
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client.get_summary()

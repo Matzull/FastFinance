@@ -153,3 +153,59 @@ class TestMain:
         finally:
             if original:
                 os.environ["TELEGRAM_BOT_TOKEN"] = original
+
+
+class TestAllowedUsers:
+    def test_parse_allowed_user_ids(self):
+        from patrimonio.telegram.bot import parse_allowed_user_ids
+
+        assert parse_allowed_user_ids("") == set()
+        assert parse_allowed_user_ids("12, 34,") == {12, 34}
+
+    def test_main_without_allowed_users_refuses_to_start(self, capsys, monkeypatch):
+        from patrimonio.telegram import bot as bot_module
+
+        monkeypatch.setattr(bot_module.dotenv, "load_dotenv", lambda: None)
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
+        monkeypatch.delenv("TELEGRAM_ALLOWED_USER_IDS", raising=False)
+        monkeypatch.setattr(
+            bot_module.PatrimonioBot, "run", lambda self: pytest.fail("bot must not run")
+        )
+
+        bot_module.main()
+        assert "TELEGRAM_ALLOWED_USER_IDS" in capsys.readouterr().out
+
+    @pytest.mark.asyncio
+    async def test_restrict_users_blocks_strangers(self):
+        from types import SimpleNamespace
+
+        from telegram.ext import ApplicationHandlerStop
+
+        bot = PatrimonioBot(token="t", allowed_user_ids={1})
+        allowed = SimpleNamespace(effective_user=SimpleNamespace(id=1))
+        stranger = SimpleNamespace(effective_user=SimpleNamespace(id=2))
+
+        await bot.restrict_users(allowed, None)
+        with pytest.raises(ApplicationHandlerStop):
+            await bot.restrict_users(stranger, None)
+
+
+class TestServiceMessages:
+    @pytest.fixture
+    def bot(self, db_temp):
+        bot = PatrimonioBot(token="t")
+        bot.service.db = db_temp
+        return bot
+
+    def test_user_text_is_markdown_escaped(self, bot, db_temp):
+        db_temp.create_bank(nombre="mi_banco*", tipo_cuenta="corriente")
+        message = bot.service.get_balance_message()
+        assert "mi\\_banco\\*" in message
+
+    def test_monthly_summary_message(self, bot, transaccion_gasto):
+        assert "Expenses: *-100.00€*" in bot.service.get_monthly_summary_message()
+
+    def test_net_worth_message(self, bot, patrimonio_activo, patrimonio_pasivo):
+        message = bot.service.get_net_worth_message()
+        assert "Assets: *+200,000.00€*" in message
+        assert "Net worth: 50,000.00€" in message

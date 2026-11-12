@@ -9,7 +9,6 @@ dependencies = [
     "jinja2>=3.1.6",
     "python-multipart>=0.0.22",
     "python-telegram-bot>=21.0",
-    "paddleocr>=3.2.0",
     "pillow>=10.0.0",
     "openai>=1.0.0",
     "openpyxl>=3.1.5",
@@ -17,8 +16,7 @@ dependencies = [
     "sqlalchemy>=2.0.46",
     "typer>=0.21.1",
     "uvicorn>=0.40.0",
-    "dotenv>=0.9.9",
-    "pip>=26.0.1",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]
@@ -28,9 +26,13 @@ fastfinance-bot = "patrimonio.telegram.bot:main"
 fastfinance-mobile = "patrimonio.mobile.app:main"
 
 [project.optional-dependencies]
+ocr = [
+    "paddleocr>=3.2.0",
+]
 mobile = [
     "kivy>=2.3.0",
-    "kivymd @ https://github.com/kivymd/KivyMD/archive/master.zip",
+    # Pinned commit: master.zip changes under the lockfile and breaks `uv sync --locked`
+    "kivymd @ https://github.com/kivymd/KivyMD/archive/a00c10c385064afb3a46b3a10d1d2c0c6505dc48.zip",
 ]
 
 [tool.uv]

@@ -12,7 +12,7 @@ version = 0.1.0
 
 # Keep Cython < 3 to avoid pyjnius build failures on some p4a/buildozer combos.
 # Build against KivyMD 2.x from GitHub; the PyPI 1.2.x release is missing MDButton.
-requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,cython==0.29.36
+requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/a00c10c385064afb3a46b3a10d1d2c0c6505dc48.zip,cython==0.29.36
 
 orientation = portrait
 fullscreen = 0

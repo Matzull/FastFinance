@@ -17,25 +17,18 @@ def client():
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
         db_path = Path(tmpdir) / "test_api.db"
 
-        # Reemplazar el gestor de DB global
         from patrimonio.database import GestorDB
+        from patrimonio.web.api import get_db
+        from patrimonio.web.app import app
 
         test_db = GestorDB(db_path=db_path)
-
-        # Importar y parchear
-        from patrimonio.web import api
-
-        original_db = api.db
-        api.db = test_db
-
-        from patrimonio.web.app import app
+        app.dependency_overrides[get_db] = lambda: test_db
 
         with TestClient(app) as c:
             yield c, test_db
 
-        # Cerrar conexión y restaurar
         test_db.engine.dispose()
-        api.db = original_db
+        app.dependency_overrides.clear()
 
 
 class TestAPIBancos:
@@ -672,3 +665,121 @@ class TestAPIInsights:
         # Verificar estructura básica
         assert "tasa_ahorro" in data
         assert "resumen_mes" in data
+
+
+class TestAPIImportacionRobusta:
+    """Tests para duplicados y fechas inválidas al importar extractos."""
+
+    def _importar(self, client, banco_id, csv_content):
+        return client.post(
+            "/api/transactions/import-expenses",
+            data={"banco_id": str(banco_id)},
+            files={"statement_file": ("extracto.csv", csv_content, "text/csv")},
+        )
+
+    def test_reimportar_no_duplica(self, client):
+        client, db = client
+        banco = db.create_bank(nombre="Banco Dup", tipo_cuenta="corriente")
+        csv_content = "Fecha,Concepto,Importe\n2026-03-01,Café,-3.5\n2026-03-02,Cine,-9.00\n"
+
+        first = self._importar(client, banco.id, csv_content).json()
+        second = self._importar(client, banco.id, csv_content).json()
+
+        assert first["imported_count"] == 2
+        assert second["imported_count"] == 0
+        assert second["skipped_count"] == 2
+        assert len(db.list_transactions(banco_id=banco.id)) == 2
+
+    def test_fecha_invalida_se_omite(self, client):
+        client, db = client
+        banco = db.create_bank(nombre="Banco Fecha", tipo_cuenta="corriente")
+        csv_content = "Fecha,Concepto,Importe\nayer,Café,-3.50\n2026-03-02,Cine,-9.00\n"
+
+        data = self._importar(client, banco.id, csv_content).json()
+
+        assert data["imported_count"] == 1
+        assert data["skipped_count"] == 1
+        assert "row 2" in data["errors"][0]
+
+
+class TestAPIValidaciones:
+    """Tests para validación de entrada."""
+
+    def test_transaccion_cantidad_negativa(self, client):
+        client, db = client
+        banco = db.create_bank(nombre="Banco", tipo_cuenta="corriente")
+        response = client.post(
+            "/api/transacciones",
+            json={
+                "banco_id": banco.id,
+                "tipo": "gasto",
+                "cantidad": "-5",
+                "descripcion": "x",
+                "categoria": "otros",
+            },
+        )
+        assert response.status_code == 422
+
+    def test_transferencia_rechazada(self, client):
+        client, db = client
+        banco = db.create_bank(nombre="Banco", tipo_cuenta="corriente")
+        response = client.post(
+            "/api/transacciones",
+            json={
+                "banco_id": banco.id,
+                "tipo": "transferencia",
+                "cantidad": "5",
+                "descripcion": "x",
+                "categoria": "otros",
+            },
+        )
+        assert response.status_code == 422
+
+    def test_patrimonio_tipo_invalido(self, client):
+        client, _ = client
+        response = client.post(
+            "/api/patrimonio",
+            json={"nombre": "Casa", "tipo": "Activo", "valor": "1000"},
+        )
+        assert response.status_code == 422
+
+    def test_banco_moneda_invalida(self, client):
+        client, _ = client
+        response = client.post(
+            "/api/bancos",
+            json={"nombre": "B", "tipo_cuenta": "corriente", "moneda": "euros"},
+        )
+        assert response.status_code == 422
+
+
+class TestAPIActualizarBanco:
+    def test_put_banco(self, client):
+        client, db = client
+        banco = db.create_bank(nombre="Viejo", tipo_cuenta="corriente")
+        response = client.put(
+            f"/api/bancos/{banco.id}",
+            json={"nombre": "Nuevo", "saldo_inicial": "250.00"},
+        )
+        assert response.status_code == 200
+        assert response.json()["nombre"] == "Nuevo"
+        assert Decimal(response.json()["saldo_actual"]) == Decimal("250.00")
+
+    def test_put_banco_inexistente(self, client):
+        client, _ = client
+        response = client.put("/api/bancos/9999", json={"nombre": "X"})
+        assert response.status_code == 404
+
+
+class TestAPIAutenticacion:
+    def test_sin_password_configurada_es_publica(self, client, monkeypatch):
+        client, _ = client
+        monkeypatch.delenv("FASTFINANCE_PASSWORD", raising=False)
+        assert client.get("/api/bancos").status_code == 200
+
+    def test_password_requerida(self, client, monkeypatch):
+        client, _ = client
+        monkeypatch.setenv("FASTFINANCE_PASSWORD", "secreto")
+        assert client.get("/api/bancos").status_code == 401
+        assert client.get("/").status_code == 401
+        assert client.get("/api/bancos", auth=("x", "mala")).status_code == 401
+        assert client.get("/api/bancos", auth=("x", "secreto")).status_code == 200

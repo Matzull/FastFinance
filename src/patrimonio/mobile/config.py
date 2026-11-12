@@ -15,6 +15,7 @@ class MobileSettings:
     """Mutable app settings persisted to disk."""
 
     base_url: str = DEFAULT_BASE_URL
+    password: str = ""
 
 
 class SettingsStore:
@@ -40,10 +41,16 @@ class SettingsStore:
         try:
             payload = json.loads(self.settings_path.read_text(encoding="utf-8"))
             base_url = str(payload.get("base_url", DEFAULT_BASE_URL)).strip()
-            return MobileSettings(base_url=base_url or DEFAULT_BASE_URL)
+            return MobileSettings(
+                base_url=base_url or DEFAULT_BASE_URL,
+                password=str(payload.get("password", "")),
+            )
         except Exception:
             return MobileSettings()
 
     def save(self, settings: MobileSettings) -> None:
-        payload = {"base_url": settings.base_url.strip() or DEFAULT_BASE_URL}
+        payload = {
+            "base_url": settings.base_url.strip() or DEFAULT_BASE_URL,
+            "password": settings.password,
+        }
         self.settings_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

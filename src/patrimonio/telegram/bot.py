@@ -8,13 +8,16 @@ import dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
+    ApplicationHandlerStop,
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
     MessageHandler,
+    TypeHandler,
     filters,
 )
+from telegram.helpers import escape_markdown
 
 from patrimonio.bot.service import FinanceBotService
 from patrimonio.models import TipoTransaccion
@@ -38,15 +41,32 @@ logger = logging.getLogger(__name__)
 class PatrimonioBot:
     """Telegram bot adapter."""
 
-    def __init__(self, token: str, openai_api_key: str | None = None):
+    def __init__(
+        self,
+        token: str,
+        openai_api_key: str | None = None,
+        allowed_user_ids: set[int] | None = None,
+    ):
         self.token = token
-        self.service = FinanceBotService(openai_api_key=openai_api_key)
+        self.allowed_user_ids = allowed_user_ids or set()
+        self.service = FinanceBotService(
+            openai_api_key=openai_api_key,
+            escape=lambda text: escape_markdown(text, version=1),
+        )
         self.user_state: dict[int, int] = {}
 
         # Backward-compatible public attributes expected by old tests.
         self.db = self.service.db
         self.extractor = self.service.ocr_extractor
         self.pending_data = self.service.pending_data
+
+    async def restrict_users(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Drop every update that does not come from an allowed user."""
+        del context
+        user = update.effective_user
+        if user is None or user.id not in self.allowed_user_ids:
+            logger.warning("Ignoring update from unauthorized user %s", user.id if user else None)
+            raise ApplicationHandlerStop
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
@@ -314,7 +334,8 @@ Soy tu asistente para gestionar tus finanzas.
             ]
         )
         await update.message.reply_text(
-            f"{emoji} ✅ Actualizado: *{rendered}*", parse_mode="Markdown"
+            f"{emoji} ✅ Actualizado: *{escape_markdown(rendered, version=1)}*",
+            parse_mode="Markdown",
         )
         await update.message.reply_text(
             f"{summary}\n\n¿Es correcto?", parse_mode="Markdown", reply_markup=keyboard
@@ -407,6 +428,7 @@ Soy tu asistente para gestionar tus finanzas.
 
     def run(self) -> None:
         app = Application.builder().token(self.token).build()
+        app.add_handler(TypeHandler(Update, self.restrict_users), group=-1)
         conversation = ConversationHandler(
             entry_points=[
                 MessageHandler(filters.PHOTO, self.process_photo),
@@ -452,13 +474,26 @@ Soy tu asistente para gestionar tus finanzas.
         app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
+def parse_allowed_user_ids(raw: str) -> set[int]:
+    """Parse a comma-separated list of Telegram user IDs."""
+    return {int(part) for part in raw.replace(" ", "").split(",") if part}
+
+
 def main() -> None:
     dotenv.load_dotenv()
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         print("❌ Error: Define la variable de entorno TELEGRAM_BOT_TOKEN")
         return
-    bot = PatrimonioBot(token=token, openai_api_key=os.environ.get("OPENAI_API_KEY"))
+    allowed_user_ids = parse_allowed_user_ids(os.environ.get("TELEGRAM_ALLOWED_USER_IDS", ""))
+    if not allowed_user_ids:
+        print("❌ Error: Define TELEGRAM_ALLOWED_USER_IDS (IDs de Telegram separados por comas)")
+        return
+    bot = PatrimonioBot(
+        token=token,
+        openai_api_key=os.environ.get("OPENAI_API_KEY"),
+        allowed_user_ids=allowed_user_ids,
+    )
     bot.run()
 
 

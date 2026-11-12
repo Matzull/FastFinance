@@ -1,5 +1,6 @@
 """Channel-agnostic business logic for finance bots."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -26,23 +27,33 @@ class TicketData:
 class FinanceBotService:
     """Shared service used by Telegram and WhatsApp adapters."""
 
-    def __init__(self, openai_api_key: str | None = None):
+    def __init__(
+        self,
+        openai_api_key: str | None = None,
+        escape: Callable[[str], str] | None = None,
+    ):
         self.db = GestorDB()
         self.ocr_extractor = ReceiptExtractor(openai_api_key=openai_api_key)
         self.pending_data: dict[int | str, TicketData] = {}
+        # Escapes user-provided text for the channel's markup (e.g. Telegram Markdown).
+        self._escape = escape or (lambda text: text)
+
+    def _esc(self, value: object) -> str:
+        return self._escape(str(value))
 
     def get_balance_message(self) -> str:
         banks = self.db.list_banks()
         if not banks:
             return "❌ No accounts registered."
 
+        balances = self.db.bank_balances()
         total = Decimal("0")
         message = "💰 *Current balances:*\n\n"
         for bank in banks:
-            balance = self.db.calculate_bank_balance(bank.id)
+            balance = balances[bank.id]
             total += balance
             sign = "🟢" if balance >= 0 else "🔴"
-            message += f"{sign} {bank.nombre}: *{balance:,.2f}€*\n"
+            message += f"{sign} {self._esc(bank.nombre)}: *{balance:,.2f}€*\n"
         return message + f"\n📊 *Total: {total:,.2f}€*"
 
     def get_banks_message(self) -> str | None:
@@ -50,18 +61,19 @@ class FinanceBotService:
         if not banks:
             return None
 
+        balances = self.db.bank_balances()
         message = "🏦 *Your bank accounts:*\n\n"
         for bank in banks:
-            balance = self.db.calculate_bank_balance(bank.id)
+            balance = balances[bank.id]
             emoji = "💳" if bank.tipo_cuenta == "corriente" else "💰"
-            message += f"{emoji} *{bank.nombre}*\n"
-            message += f"   Type: {bank.tipo_cuenta}\n"
-            message += f"   Balance: {balance:,.2f} {bank.moneda}\n\n"
+            message += f"{emoji} *{self._esc(bank.nombre)}*\n"
+            message += f"   Type: {self._esc(bank.tipo_cuenta)}\n"
+            message += f"   Balance: {balance:,.2f} {self._esc(bank.moneda)}\n\n"
         return message
 
     def get_monthly_summary_message(self) -> str:
         today = date.today()
-        summary = self.db.monthly_summary(today.year, today.month)
+        summary = self.db.monthly_summary(today.month, today.year)
         sub_cost = self.db.calculate_monthly_subscription_cost()
         message = f"📊 *Summary for {today.strftime('%B %Y')}*\n\n"
         message += f"💵 Income: *+{summary['ingresos']:,.2f}€*\n"
@@ -76,10 +88,8 @@ class FinanceBotService:
             return "📭 No expenses registered."
         message = "💸 *Recent expenses:*\n\n"
         for txn in txns:
-            message += (
-                f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
-            )
-            message += f"  _{txn.categoria}_\n"
+            message += f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {self._esc(txn.descripcion)}\n"
+            message += f"  _{self._esc(txn.categoria)}_\n"
         return message
 
     def get_recent_income_message(self, limit: int = 10) -> str:
@@ -88,10 +98,8 @@ class FinanceBotService:
             return "📭 No income entries registered."
         message = "💵 *Recent income:*\n\n"
         for txn in txns:
-            message += (
-                f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {txn.descripcion}\n"
-            )
-            message += f"  _{txn.categoria}_\n"
+            message += f"• {txn.fecha.strftime('%d/%m')} | *{txn.cantidad:,.2f}€* - {self._esc(txn.descripcion)}\n"
+            message += f"  _{self._esc(txn.categoria)}_\n"
         return message
 
     def get_subscriptions_message(self) -> str:
@@ -103,17 +111,18 @@ class FinanceBotService:
         for subscription in subscriptions:
             monthly_cost = subscription.costo_mensual()
             monthly_total += monthly_cost
-            message += f"• *{subscription.nombre}*\n"
+            message += f"• *{self._esc(subscription.nombre)}*\n"
             message += f"  {subscription.cantidad:,.2f}€/{subscription.frecuencia.value} (~{monthly_cost:,.2f}€/mes)\n"
         return message + f"\n💰 *Monthly total: {monthly_total:,.2f}€*"
 
     def get_net_worth_message(self) -> str:
-        result = self.db.calculate_net_worth()
+        totals = self.db.net_worth_breakdown()
+        assets, liabilities, net_worth = totals["activos"], totals["pasivos"], totals["neto"]
         message = "🏛️ *Your Net Worth*\n\n"
-        message += f"📈 Assets: *+{result['activos']:,.2f}€*\n"
-        message += f"📉 Liabilities: *-{result['pasivos']:,.2f}€*\n"
-        message += f"\n💎 *Net worth: {result['neto']:,.2f}€*"
-        return message + (" 🎉" if result["neto"] >= 0 else "")
+        message += f"📈 Assets: *+{assets:,.2f}€*\n"
+        message += f"📉 Liabilities: *-{liabilities:,.2f}€*\n"
+        message += f"\n💎 *Net worth: {net_worth:,.2f}€*"
+        return message + (" 🎉" if net_worth >= 0 else "")
 
     def process_receipt_image(
         self, user_id: int | str, image_bytes: bytes
@@ -186,9 +195,9 @@ class FinanceBotService:
         if data.txn_date is not None:
             message += f"📅 Date: {data.txn_date}\n"
         if data.merchant:
-            message += f"🏪 Merchant: {data.merchant}\n"
+            message += f"🏪 Merchant: {self._esc(data.merchant)}\n"
         if data.description:
-            message += f"📝 Description: {data.description}\n"
+            message += f"📝 Description: {self._esc(data.description)}\n"
         return message
 
     def update_field(
@@ -245,9 +254,9 @@ class FinanceBotService:
         kind = "💸 EXPENSE" if data.transaction_type == TipoTransaccion.GASTO else "💵 INCOME"
         message = f"*{kind}*\n\n"
         message += f"💰 Amount: *{data.amount:,.2f}€*\n"
-        message += f"📝 Description: {data.description}\n"
-        message += f"📂 Category: {data.category}\n"
-        message += f"🏦 Account: {bank.nombre}\n"
+        message += f"📝 Description: {self._esc(data.description)}\n"
+        message += f"📂 Category: {self._esc(data.category)}\n"
+        message += f"🏦 Account: {self._esc(bank.nombre)}\n"
         message += f"📅 Date: {data.txn_date}\n\n"
         message += "Confirm?"
         return message
@@ -273,7 +282,7 @@ class FinanceBotService:
                 fecha=data.txn_date,
             )
             emoji = "💸" if data.transaction_type == TipoTransaccion.GASTO else "💵"
-            message = f"✅ {emoji} Transaction registered successfully!\n\n*{data.amount:,.2f}€* - {data.description or ''}"
+            message = f"✅ {emoji} Transaction registered successfully!\n\n*{data.amount:,.2f}€* - {self._esc(data.description or '')}"
             return True, message
         except Exception as error:
             return False, f"❌ Save error: {error}"
